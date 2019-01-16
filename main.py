@@ -4,51 +4,52 @@ from PySide2 import QtGui
 from PySide2 import QtCore
 
 # Create the application window
-app = QApplication(sys.argv)
+# app = QApplication(sys.argv)
 
 # fileName = QFileDialog.getOpenFileName(self,
 #     tr("Open Image"), "/home/jana", tr("Image Files (*.png *.jpg *.bmp)"))
 
-# dialog = QFileDialog()
-# dialog.setFileMode(QFileDialog.AnyFile)
-# dialog.show()
-
-window =  QWidget()
-button1 =  QPushButton("Select")
-button2 =  QPushButton("Select")
-
-# layout =  QVBoxLayout()
-# layout.addWidget(button1)
-# layout.addWidget(button2)
-# layout.addWidget(button3)
-# layout.addWidget(button4)
-# layout.addWidget(button5)
-#
-# layout =  QGridLayout()
-# layout.addWidget(button1, 0, 0)
-# layout.addWidget(button2, 0, 1)
-# layout.addWidget(button3, 1, 0, 1, 2)
-# layout.addWidget(button4, 2, 0)
-# layout.addWidget(button5, 2, 1)
-
-lineEdit1 = QLineEdit()
-lineEdit2 = QLineEdit()
-lineEdit3 = QLineEdit()
-
-
-layout = QFormLayout()
-layout.addRow(button1, lineEdit1)
-layout.addRow(button2, lineEdit2)
-layout.addRow(button3, lineEdit3)
-
-window.setLayout(layout)
-window.show()
-
-
-# Add text and change the style
-# label = QLabel("Hello World!")
 # label = QLabel("<font color=red size=40>Hello World!</font>")
 # label.show()
 
+class MainWindow(QWidget):
 
-app.exec_()
+    def __init__(self, parent=None):
+        super(MainWindow, self).__init__(parent)
+
+        self.button1 =  QPushButton("Select Image Folder")
+        self.button2 =  QPushButton("Select Backup Folder")
+
+        self.lineEdit1 = QLineEdit()
+        self.lineEdit2 = QLineEdit()
+
+        self.image_dir = "/Path/to/image/directoy/"
+        self.backup_dir = "/Path/to/backup/directoy"
+
+        layout = QFormLayout()
+        layout.addRow(self.button1, self.lineEdit1)
+        layout.addRow(self.button2, self.lineEdit2)
+
+        self.button1.clicked.connect(self.button1Click)
+        self.button2.clicked.connect(self.button2Click)
+
+        self.setLayout(layout)
+
+    def selectDirectory(self):
+        '''Function for selecting an exisitng directoy'''
+        return QFileDialog.getExistingDirectory(self)
+
+    def button1Click(self):
+        self.image_dir = self.selectDirectory()
+        self.lineEdit1.setText(self.image_dir)
+
+    def button2Click(self):
+        self.backup_dir = self.selectDirectory()
+        self.lineEdit2.setText(self.backup_dir)
+
+
+if __name__ == "__main__":
+    app = QApplication()
+    window = MainWindow()
+    window.show()
+    app.exec_()
