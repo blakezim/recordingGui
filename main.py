@@ -7,6 +7,10 @@ import numpy as np
 import csv
 from rawkit.raw import Raw
 import qdarkstyle
+# import monitor
+import threading
+from watchdog.observers import Observer
+import watch
 # import matplotlib.pyplot as plt
 # Create the application window
 # app = QApplication(sys.argv)
@@ -159,6 +163,20 @@ class MainWindow(QWidget):
 
         return layout
 
+    def startWatcher(self):
+        # Create the other thread
+        self.thread = QtCore.QThread(self)
+
+        # Create a watcher object
+        self.watcher = watch.QWatcher(self.image_dir)
+
+        # Connect the signal on the watcher with the launch window function
+        self.watcher.image_signal.connect(self.imageWindowLauncher)
+        self.watcher.moveToThread(self.thread)
+        self.thread.started.connect(self.watcher.run)
+        self.thread.start()
+
+
     def selectDirectory(self):
         '''Function for selecting an exisitng directoy'''
         return QFileDialog.getExistingDirectory(self)
@@ -168,6 +186,18 @@ class MainWindow(QWidget):
         self.image_dir_label.setText(self.image_dir + '/')
 
         self.image_dir_button.setDisabled(True)
+        # self.handler = monitor.MyHandler()
+        # watcher.schedule(self.handler, self.image_dir + '/')
+
+        # thread = QtCore.QThread()
+
+        # watcher.moveToThread()
+
+        self.startWatcher()
+
+        # w.started.connect(watcher.run())
+        # # print(self.handler.fileList)
+        # w.start()
 
         if not self.backup_dir_button.isEnabled():
             self.main_table.setDisabled(False)
@@ -223,9 +253,14 @@ class MainWindow(QWidget):
                 item = QTableWidgetItem(col)
                 self.main_table.setItem(i, j, item)
 
+    def imageWindowLauncher(self, image_path):
+        self.image_window = ImageWindow(self.image_dir, self.backup_dir, image_path)
+        self.image_window.show()
+
+
 class ImageWindow(QWidget):
 
-    def __init__(self, image_dir, backup_dir, parent=None):
+    def __init__(self, image_dir, backup_dir, image_path, parent=None):
         super(ImageWindow, self).__init__(parent)
 
         # Set main window properties
@@ -234,6 +269,7 @@ class ImageWindow(QWidget):
 
         self.image_dir = image_dir
         self.backup_dir = backup_dir
+        self.image_path = image_path
 
         leftLayout = self.initLeftLayout()
         rightLayout = self.initRightLayout()
@@ -315,13 +351,11 @@ class ImageWindow(QWidget):
      # qimage = QImage(im_np, im_np.shape[1], im_np.shape[0],
      #                 QImage.Format_RGB888)
      # pixmap = QPixmap(qimage)
+watcher = Observer()
+app = QApplication()
+app.setStyleSheet(qdarkstyle.load_stylesheet_pyside())
+window = MainWindow()
 
-
-if __name__ == "__main__":
-    app = QApplication()
-
-    app.setStyleSheet(qdarkstyle.load_stylesheet_pyside())
-
-    window = MainWindow()
-    window.show()
-    app.exec_()
+window.show()
+app.exec_()
+watcher.stop()
