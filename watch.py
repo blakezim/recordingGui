@@ -11,25 +11,22 @@ class QWatcher(QtCore.QObject):
         super(QWatcher, self).__init__(parent)
         self.observer = Observer()
         self.image_dir = image_dir
-        print('INIT')
-        # self.backup_dir = backup_dir
+        self.status = True
 
 
     def run(self):
-        event_handler = Handler(self.image_signal)
-        self.observer.schedule(event_handler, self.image_dir)
-        self.observer.start()
-        print('Start')
         try:
-            # print('HERE')
-            while True:
+            event_handler = Handler(self.image_signal)
+            self.observer.schedule(event_handler, self.image_dir)
+            self.observer.start()
+            while self.status:
                 time.sleep(1)
         except:
             self.observer.stop()
             print("Error")
 
-        # self.observer.join()
-
+    def stop(self):
+        self.status = False
 
 class Handler(FileSystemEventHandler):
 
