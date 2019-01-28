@@ -8,10 +8,12 @@ import csv
 import glob
 from rawkit.raw import Raw
 import qdarkstyle
+import subprocess as sp
 # import monitor
 import threading
 # from watchdog.observers import Observer
 import watch
+from image import ImageWindow
 import os
 import time
 # import matplotlib.pyplot as plt
@@ -37,6 +39,9 @@ class MainWindow(QWidget):
         self.large_text = QtGui.QFont()
         self.large_text.setFamily('Helvetica')
         self.large_text.setPointSize(30)
+
+        # Set an over section counter
+        self.section_count = 1
 
         # Set main window properties
         self.setGeometry(300, 300, 1000, 800)
@@ -95,6 +100,9 @@ class MainWindow(QWidget):
         # Need to check that the backup directory is the same as the image directory
         self.backup()
 
+        if not os.path.exists(self.backup_dir + '/csv_files/'):
+            os.makedirs(self.backup_dir + '/csv_files/')
+
         # Only if both directories have been selected do we enable the rest of the GUI
         if not self.image_dir_button.isEnabled():
             self.main_table.setDisabled(False)
@@ -107,28 +115,33 @@ class MainWindow(QWidget):
 
     def backup(self):
         '''Function for backing up the image directory'''
-        print('Backup not implemented yet')
+        # print('Backup not implemented yet')
         # Create a list of the image files and the csv files and remove duplicates
         # Copy what ever is left
+        image_list = glob.glob(self.image_dir + '/*.CR2')
+        backup_list = glob.glob(self.backup_dir + '/*.CR2')
 
-        pass
+        image_names = [x.split('/')[-1] for x in image_list]
+        backup_names = [x.split('/')[-1] for x in backup_list]
+
+        copy_names = [x for x in image_names if x not in backup_names]
+
+        print(copy_names)
+
+        for image in copy_names:
+            sp.Popen(["cp", self.image_dir + '/' + image, self.backup_dir])
 
     def hit_buttonClick(self):
 
-        self.temp_distance = self.temp_distance + 10
-        self.image_dist.setText('Image Distance : ' + str(self.temp_distance) + ' um')
+        self.image_distance = self.image_distance + 10
+        self.total_distance = self.total_distance + 10
+        self.image_dist_label.setText('Image Distance: ' + str(self.image_distance) + ' um')
+        self.total_dist_label.setText('Total Distance: ' + str(self.total_distance) + ' um')
 
-        if self.temp_distance == 50:
+        if self.image_distance == 50:
             temp = "<font color=red size=40>TAKE AN IMAGE</font>"
             self.main_label.setText(temp)
-            # maybe put a wait in here?
             self.setEnabled(False)
-            # self.temp_distance = 0
-
-        self.image_dist.setText('Image Distance : ' + str(self.temp_distance) + ' um')
-        # self.test = ImageWindow(self.image_dir, self.backup_dir)
-        # self.test.show()
-        # self.populateTable()
 
     def populateTable(self):
 
@@ -144,6 +157,9 @@ class MainWindow(QWidget):
             # Take away all of the rows
             self.main_table.setRowCount(0)
             self.main_table.setColumnCount(7)
+
+            # initiate the table_list as empty
+            self.table_list = []
 
         else:
             # Open the last saved csv file
@@ -166,10 +182,11 @@ class MainWindow(QWidget):
 
     def imageWindowLauncher(self, image_path):
         self.setEnabled(False)
-        self.image_window = ImageWindow(self.image_dir, self.backup_dir, image_path)
+        self.image_window = ImageWindow(self.image_dir, self.backup_dir, image_path, self)
         self.image_window.show()
         app.processEvents()
         self.image_window.loadImage()
+        self.backup()
 
     def changeSS(self):
         self.ss_drop.setDisabled(False)
@@ -222,37 +239,22 @@ class MainWindow(QWidget):
         self.ss_button.clicked.connect(self.changeSS)
 
         # Set the line edits for the settings
-        # ss_values = ['']
-        # self.comboBox.addItems([str(x) for x in range(3)])
+        self.ss_values = ['2', '4', '8', '15', '30', '60',
+                          '125', '250', '500']
         self.ss_drop = QComboBox()
-        self.ss_drop.addItem('2')
-        self.ss_drop.addItem('4')
-        self.ss_drop.addItem('8')
-        self.ss_drop.addItem('15')
-        self.ss_drop.addItem('30')
-        self.ss_drop.addItem('60')
-        self.ss_drop.addItem('125')
-        self.ss_drop.addItem('250')
-        self.ss_drop.addItem('500')
+        self.ss_drop.addItems(self.ss_values)
         self.ss_drop.setCurrentIndex(5)
         self.ss_drop.currentIndexChanged.connect(self.changedSS)
 
+        self.fstop_values = ['1.4', '2.0', '2.8', '4.0', '5.6', '8.0']
         self.fstop_drop = QComboBox()
-        self.fstop_drop.addItem('1.4')
-        self.fstop_drop.addItem('2')
-        self.fstop_drop.addItem('2.8')
-        self.fstop_drop.addItem('4')
-        self.fstop_drop.addItem('5.6')
-        self.fstop_drop.addItem('8')
-        self.fstop_drop.setCurrentIndex(2)
+        self.fstop_drop.addItems(self.fstop_values)
+        self.fstop_drop.setCurrentIndex(5)
         self.fstop_drop.currentIndexChanged.connect(self.changedFStop)
 
+        self.iso_values = ['100', '200', '400', '800', '1600']
         self.iso_drop = QComboBox()
-        self.iso_drop.addItem('100')
-        self.iso_drop.addItem('200')
-        self.iso_drop.addItem('400')
-        self.iso_drop.addItem('800')
-        self.iso_drop.addItem('1600')
+        self.iso_drop.addItems(self.iso_values)
         self.iso_drop.setCurrentIndex(1)
         self.iso_drop.currentIndexChanged.connect(self.changedISO)
 
@@ -304,13 +306,13 @@ class MainWindow(QWidget):
         # Add the directory labels
         self.image_dir_label = QLabel()
         self.backup_dir_label = QLabel()
-        self.image_dist = QLabel()
+        self.image_dist_label = QLabel()
         self.main_label = QLabel()
 
         # Change the font of all the lables and buttons
         self.image_dir_label.setFont(self.small_text)
         self.backup_dir_label.setFont(self.small_text)
-        self.image_dist.setFont(self.small_text)
+        self.image_dist_label.setFont(self.small_text)
         self.main_label.setFont(self.small_text)
         self.image_dir_button.setFont(self.small_text)
         self.backup_dir_button.setFont(self.small_text)
@@ -353,27 +355,27 @@ class MainWindow(QWidget):
 
         # Make the hit button and the lables for the section distances
         self.hit_button = QPushButton("HIT!!!")
-        self.image_dist = QLabel()
-        self.total_dist = QLabel()
+        self.image_dist_label = QLabel()
+        self.total_dist_label = QLabel()
 
         # Set the font for the labels and button
-        self.image_dist.setFont(self.large_text)
-        self.total_dist.setFont(self.large_text)
+        self.image_dist_label.setFont(self.large_text)
+        self.total_dist_label.setFont(self.large_text)
         self.hit_button.setFont(self.large_text)
 
         # Set the size policies for the buttons and labels
         self.hit_button.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
-        self.image_dist.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
-        self.total_dist.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
+        self.image_dist_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
+        self.total_dist_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
 
         # Initalize the distances
-        self.temp_distance = 0
+        self.image_distance = 0
         self.total_distance = 0
 
         # Make the labels for the distances
         # Keep the number separate from the text so they can easily be used elsewhere
-        self.image_dist.setText('Image Distance : ' + str(self.temp_distance) + ' um')
-        self.total_dist.setText('Total Distance : ' + str(self.total_distance) + ' um')
+        self.image_dist_label.setText('Image Distance : ' + str(self.image_distance) + ' um')
+        self.total_dist_label.setText('Total Distance : ' + str(self.total_distance) + ' um')
 
         # Connect the hit button
         self.hit_button.clicked.connect(self.hit_buttonClick)
@@ -384,8 +386,8 @@ class MainWindow(QWidget):
         # Create the layout
         layout = QGridLayout()
         layout.addWidget(self.hit_button, 0, 0, 2, 1)
-        layout.addWidget(self.image_dist, 0, 1)
-        layout.addWidget(self.total_dist, 1, 1)
+        layout.addWidget(self.image_dist_label, 0, 1)
+        layout.addWidget(self.total_dist_label, 1, 1)
         layout.setColumnStretch(0, 20)
         layout.setColumnStretch(1, 15)
 
@@ -404,146 +406,6 @@ class MainWindow(QWidget):
        msg.exec_()
        # print "value of pressed message box button:", retval
 
-'End Class'
-# class ErrorWindow(QWidget):
-#
-#     def __init__(self, msg, parent=None):
-#         super(ErrorWindow, self).__init__(parent)
-#
-#         # self.setGeometry(100, 200, 200, 500)
-#         self.setWindowTitle('ERROR')
-#
-#         self.font = QtGui.QFont()
-#         self.font.setFamily('Helvetica')
-#         self.font.setPointSize(25)
-#
-#         self.close_button = QPushButton('Ok')
-#         self.message = QLabel()
-#         self.message.setText(msg)
-#         self.message.setFont(self.font)
-#
-#         self.close_button.clicked.connect(self.closeButton)
-#         self.layout = QVBoxLayout()
-#         self.layout.addWidget(self.message)
-#         self.layout.addWidget(self.close_button)
-#
-#         self.setLayout(self.layout)
-#
-#     def closeButton(self):
-#         self.destroy()
-
-class ImageWindow(QWidget):
-
-    def __init__(self, image_dir, backup_dir, image_path, parent=None):
-        super(ImageWindow, self).__init__(parent)
-
-        # Set main window properties
-        self.setGeometry(300, 300, 800, 300)
-        self.setWindowTitle('Image Window')
-
-        self.image_dir = image_dir
-        self.backup_dir = backup_dir
-        self.image_path = image_path
-
-        self.setLayout(self.initLayout())
-
-    def initLayout(self):
-        self.retake_button = QPushButton('Retake Image')
-        self.accept_button = QPushButton('Accept Image')
-        self.section_a = QCheckBox('Section a')
-        self.section_b = QCheckBox('Section b')
-        self.section_c = QCheckBox('Section c')
-        self.iso_loaded = QLabel("ISO: ")
-        self.fstop_loaded = QLabel("FStop: ")
-        self.ss_loaded = QLabel("SS: ")
-        self.image_label = QLabel("Loading...")
-        self.notes_label = QLineEdit("No notes")
-
-        self.retake_button.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.accept_button.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.section_a.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.section_b.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.section_c.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.iso_loaded.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.fstop_loaded.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.ss_loaded.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.notes_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
-        # self.load_image_button.clicked.connect(self.selectNewImage)
-
-        # Connect the button
-        self.accept_button.clicked.connect(self.acceptClicked)
-        self.retake_button.clicked.connect(self.retakeClicked)
-
-
-        self.image_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        gridLayout = QGridLayout()
-        gridLayout.addWidget(self.retake_button, 0, 0, 1, 3)
-        gridLayout.addWidget(self.section_a, 1, 0)
-        gridLayout.addWidget(self.section_b, 1, 1)
-        gridLayout.addWidget(self.section_c, 1, 2)
-        gridLayout.addWidget(self.iso_loaded, 2, 0)
-        gridLayout.addWidget(self.fstop_loaded, 2, 1)
-        gridLayout.addWidget(self.ss_loaded, 2, 2)
-        gridLayout.addWidget(self.accept_button, 3, 0, 1, 3)
-        gridLayout.addWidget(self.notes_label, 4, 0, 1, 3)
-
-        layout = QGridLayout()
-        layout.addLayout(gridLayout, 0, 0)
-        layout.addWidget(self.image_label, 0, 1)
-        # layout.setColumnStretch(0, 10)
-        # layout.setColumnStretch(1, 15)
-        # self.image_label.setText(self.image_path)
-
-        return layout
-
-
-    # def initNotesLayout(self):
-    #     self.notes_label = QLabel()
-    #     self.notes_label.setText('No notes')
-    #
-    #     layout = QHBoxLayout()
-    #     layout.addWidget(self.notes_label)
-    #
-    #     self.notes_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
-    #
-    #     return layout
-
-    def selectDirectory(self):
-        '''Function for selecting an exisitng directoy'''
-        return QFileDialog.getOpenFileName(self, 'Open File',
-                '/Users/blakez/Documents/TestingGUI/testingMaterials/',
-                "Image Files (*.CR2)")
-
-    def selectNewImage(self):
-        self.newImage = self.selectDirectory()
-        self.loadImage(self.newImage[0])
-        # print()
-
-
-    def loadImage(self):
-        time.sleep(0.1)
-        # pth = '/Users/blakez/Documents/TestingGUI/testingMaterials/IMG_0001.cr2'
-        # im = Raw(pth)
-        # rgb = np.array(im.to_buffer())
-        img = rawpy.imread(self.image_path)
-        test = img.postprocess()
-
-        a = QtGui.QImage(test.copy(), test.shape[1], test.shape[0],
-                        test.strides[0], QtGui.QImage.Format_RGB888)
-        map = QtGui.QPixmap(a)
-        new = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
-        self.image_label.setPixmap(new)
-
-        # Metat data is a namedtuple container
-        with Raw(filename=self.image_path) as raw:
-            print(raw.metadata.iso)
-
-    def acceptClicked(self):
-        pass
-
-    def retakeClicked(self):
-        pass
 
 if __name__ == '__main__':
 
