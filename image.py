@@ -9,7 +9,7 @@ import glob
 from rawkit.raw import Raw
 import qdarkstyle
 # import monitor
-import threading
+# import threading
 # from watchdog.observers import Observer
 import watch
 import os
@@ -53,6 +53,19 @@ class ImageWindow(QWidget):
         self.ss_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
         self.notes_edit.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
         # self.load_image_button.clicked.connect(self.selectNewImage)
+
+        # Check to see if the the sections have been taken yet
+        if self.main_window.section_a:
+            self.section_a.setChecked(True)
+            self.section_a.setDisabled(True)
+
+        if self.main_window.section_b:
+            self.section_b.setChecked(True)
+            self.section_b.setDisabled(True)
+
+        if self.main_window.section_c:
+            self.section_c.setChecked(True)
+            self.section_c.setDisabled(True)
 
         # Connect the button
         self.accept_button.clicked.connect(self.acceptClicked)
@@ -138,7 +151,7 @@ class ImageWindow(QWidget):
             msg += 'Please retake the image!'
             self.errorMessage(msg)
 
-    def _rowConstructor(self):
+    def _rowConstructor(self, note=None):
         # Need to populate the table with the new information
         # Do I need to have a list of each table column for when I write out?
         # Need to construct a string for the sections that were taken
@@ -146,12 +159,15 @@ class ImageWindow(QWidget):
         # Need to have a tracker for what sections have been clicked
         self.section_list = ''
         section_count_string = str(self.main_window.section_count)
-        if self.section_a.isChecked():
-            self.section_list += section_count_string + 'a'
-        if self.section_b.isChecked():
-            self.section_list += '; ' + section_count_string + 'b'
-        if self.section_c.isChecked():
-            self.section_list += '; ' + section_count_string + 'c'
+        if self.section_a.isChecked() and self.section_a.isEnabled():
+            self.section_list += section_count_string + 'a;'
+            self.main_window.section_a = True
+        if self.section_b.isChecked() and self.section_b.isEnabled():
+            self.section_list += section_count_string + 'b;'
+            self.main_window.section_b = True
+        if self.section_c.isChecked() and self.section_c.isEnabled():
+            self.section_list += section_count_string + 'c;'
+            self.main_window.section_c = True
             # At this point, all of the section have been taken
             # Need to update the count
             self.main_window.section_count += 1
@@ -160,6 +176,11 @@ class ImageWindow(QWidget):
 
         # Construct the new row to the table as a list of strings
         # get rid of the .CR2
+        if note is not None:
+            notes = self.notes_edit.text() + ' - ' + note
+        else:
+            notes = self.notes_edit.text()
+
         self.main_window.table_list.append([
         self.image_path.split('/')[-1].split('.')[0],
         str(self.main_window.total_distance),
@@ -167,8 +188,17 @@ class ImageWindow(QWidget):
         str(self.ss_loaded),
         str(self.iso_loaded),
         str(self.fstop_loaded),
-        self.notes_edit.text()
+        notes
         ])
+
+        # Add a new row to the table
+        rowPosition = self.main_window.main_table.rowCount()
+        self.main_window.main_table.insertRow(rowPosition)
+
+        # Populate the new row
+        for i, col in enumerate(self.main_window.table_list[-1]):
+            item = QTableWidgetItem(col)
+            self.main_window.main_table.setItem(rowPosition, i, item)
 
     def acceptClicked(self):
         # Need to reset the image_distance
@@ -181,26 +211,27 @@ class ImageWindow(QWidget):
         # Update the main window list with the new row
         self._rowConstructor()
 
-        # Add a new row to the table
-        rowPosition = self.main_window.main_table.rowCount()
-        self.main_window.main_table.insertRow(rowPosition)
-
-        # Populate the new row
-        for i, col in enumerate(self.main_window.table_list[-1]):
-            item = QTableWidgetItem(col)
-            self.main_window.main_table.setItem(rowPosition, i, item)
-
         # Need to re-enable the main window
         self.main_window.setDisabled(False)
+        # Make sure all the buttons have been restored to enable
+        self.main_window.hit_button.setDisabled(False)
+        self.main_window.main_table.setDisabled(False)
         self.close()
         self.destroy()
 
-        # Need to add something to keep section boxes checked
-
-        pass
 
     def retakeClicked(self):
-        pass
+        msg = "<font color=red size=40>RE-TAKE THE IMAGE</font>"
+        self.main_window.main_label.setText(msg)
+
+        # Do I need to allow the user to change the image parameteres here?
+        self.main_window.setDisabled(False)
+        self.main_window.hit_button.setDisabled(True)
+        self.main_window.main_table.setDisabled(True)
+
+        self._rowConstructor(note='Bad Settings')
+        self.close()
+        self.destroy()
 
     def errorMessage(self, error):
        msg = QMessageBox()

@@ -16,15 +16,7 @@ import watch
 from image import ImageWindow
 import os
 import time
-# import matplotlib.pyplot as plt
-# Create the application window
-# app = QApplication(sys.argv)
 
-# fileName = QFileDialog.getOpenFileName(self,
-#     tr("Open Image"), "/home/jana", tr("Image Files (*.png *.jpg *.bmp)"))
-
-# label = QLabel("<font color=red size=40>Hello World!</font>")
-# label.show()
 
 class MainWindow(QWidget):
 
@@ -42,6 +34,11 @@ class MainWindow(QWidget):
 
         # Set an over section counter
         self.section_count = 1
+
+        # Set trackers for what sections have been taken
+        self.section_a = False
+        self.section_b = False
+        self.section_c = False
 
         # Set main window properties
         self.setGeometry(300, 300, 1000, 800)
