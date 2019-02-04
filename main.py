@@ -31,11 +31,15 @@ class MainWindow(QWidget):
 
         # Group section counter
         self.section_count = 1
+        self.taking_sections = True
 
         # Set trackers for what sections have been taken
         self.section_a = False
         self.section_b = False
         self.section_c = False
+
+        # Indicator for if the image has to be taken again
+        self.retake = False
 
         # Set main window properties
         self.setGeometry(300, 300, 1000, 800)
@@ -69,8 +73,6 @@ class MainWindow(QWidget):
         self.image_dir_button.setDisabled(True)
         # Start monitoring the directoy
         self._startWatcher()
-        # Populate the table
-        self.populateTable()
 
         # Do I need to have a file list on this object?
         if not self.backup_dir_button.isEnabled():
@@ -79,8 +81,11 @@ class MainWindow(QWidget):
             self.iso_button.setDisabled(False)
             self.fstop_button.setDisabled(False)
             self.ss_button.setDisabled(False)
-            msg = "<font color=green>Everything Nominal</font>"
-            self.main_label.setText(msg)
+            # msg = "<font color=green>Everything Nominal</font>"
+            # self.main_label.setText(msg)
+            # Populate the table
+            self.populateTable()
+            self.calibrationImage()
 
 
     def backup_dir_buttonClick(self):
@@ -104,23 +109,41 @@ class MainWindow(QWidget):
             self.iso_button.setDisabled(False)
             self.fstop_button.setDisabled(False)
             self.ss_button.setDisabled(False)
-            temp = "<font color=green>Everything Nominal</font>"
-            self.main_label.setText(temp)
+            # temp = "<font color=green>Everything Nominal</font>"
+            # self.main_label.setText(temp)
+            # Populate the table
+            self.populateTable()
+            self.calibrationImage()
 
     def backup(self):
         '''Function for backing up the image directory'''
-        # Create a list of the image files and the csv files and remove duplicates
-        # Copy what ever is left
+        # Create a list of the image files is the main and backup dirs
         image_list = glob.glob(self.image_dir + '/*.CR2')
         backup_list = glob.glob(self.backup_dir + '/*.CR2')
 
+        # Create a list of CSV files
+        csv_main_list = glob.glob(self.image_dir + '/csv_files/*')
+        csv_backup_list = glob.glob(self.backup_dir + '/csv_files/*')
+
+        # Remove any duplicates
         image_names = [x.split('/')[-1] for x in image_list]
         backup_names = [x.split('/')[-1] for x in backup_list]
 
-        copy_names = [x for x in image_names if x not in backup_names]
+        csv_main_names = [x.split('/')[-1] for x in csv_main_list]
+        csv_backup_names = [x.split('/')[-1] for x in csv_backup_list]
 
+        # Make a list of images to copy
+        copy_names = [x for x in image_names if x not in backup_names]
+        csv_names = [x for x in csv_main_names if x not in csv_backup_names]
+
+        # Copy the images to the backup directoy
         for image in copy_names:
             sp.Popen(["cp", self.image_dir + '/' + image, self.backup_dir])
+
+        for file in csv_names:
+            sp.Popen(["cp", self.image_dir + '/csv_files/' +
+                      file, self.backup_dir + '/csv_files/'])
+
 
     def hit_buttonClick(self):
 
@@ -137,12 +160,14 @@ class MainWindow(QWidget):
 
         # Need to deal with what happens when 250 is hit
         if self.total_distance % 250 == 0:
-            msg = "<font color=red size=40>You should be taking sections</font>"
+            msg = "<font color=red size=20>You should be taking sections</font>"
             self.main_label.setText(msg)
             # Need to make sure that the section buttons can be clicked again
             self.section_a = False
             self.section_b = False
             self.section_c = False
+
+            self.taking_sections = True
 
     def populateTable(self):
 
@@ -185,8 +210,21 @@ class MainWindow(QWidget):
                     item = QTableWidgetItem(col)
                     self.main_table.setItem(i, j, item)
 
-        ### Need to make sure the CSV files get copied if they are not backed up
-        # this means we need to change when we populate the table
+
+    def save(self):
+        path = self.image_dir + '/csv_files/'
+        # Append the image name to the csv - will make it different
+        name = 'csv_depth_{0}_'.format(str(self.total_distance).zfill(4))
+        name += self.table_list[-1][0]
+        name += '.csv'
+
+        with open(path + name, mode='w') as f:
+            writer = csv.writer(f, delimiter=',')
+            for row in self.table_list:
+                writer.writerow(row)
+
+        # Backup to make sure the CSV file gets copied
+        self.backup()
 
     def imageWindowLauncher(self, image_path):
         self.setEnabled(False)
@@ -195,6 +233,15 @@ class MainWindow(QWidget):
         app.processEvents()
         self.image_window.loadImage()
         self.backup()
+
+    def calibrationImage(self):
+        msg = "<font color=red>Face the block and take a calibration image.</font>"
+        self.main_label.setText(msg)
+
+        msg = "TAKE AN IMAGE!!!"
+        self.hit_button.setText(msg)
+        self.hit_button.setStyleSheet("color: red")
+        self.setEnabled(False)
 
     def changeSS(self):
         self.ss_drop.setDisabled(False)

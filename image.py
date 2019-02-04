@@ -210,7 +210,14 @@ class ImageWindow(QWidget):
         # Need to check if all sections have been taken
         if self.main_window.section_a and self.main_window.section_b and self.main_window.section_c:
             # Update the group section counter
-            self.main_window.section_count += 1
+            # This is going to incrament every time
+            # Only update if 'should be taking sections'
+            # temp = "<font color=red size=40>You should be taking sections</font>"
+            # if self.main_window.main_label.text() == temp:
+            #     self.main_window.section_count += 1
+            if self.main_window.taking_sections:
+                self.main_window.section_count += 1
+                self.main_window.taking_sections = False
             # Update the main message
             msg = "<font color=green>Everything Nominal</font>"
             self.main_window.main_label.setText(msg)
@@ -218,9 +225,15 @@ class ImageWindow(QWidget):
             self.section_a = False
             self.section_b = False
             self.section_c = False
+        else:
+            msg = "<font color=red size=20>You should be taking sections</font>"
+            self.main_window.main_label.setText(msg)
+        # if self.main_window.total_distance == 0:
+        #     msg = "<font color=green>Everything Nominal</font>"
+        #     self.main_window.main_label.setText(msg)
 
-
-
+        self.main_window.retake = False
+        self.main_window.save()
         self.close()
         self.destroy()
 
@@ -235,6 +248,10 @@ class ImageWindow(QWidget):
         self.main_window.main_table.setDisabled(True)
 
         self._rowConstructor(note='Bad Settings')
+
+        # Save the row
+        self.main_window.retake = True
+        self.main_window.save()
         self.close()
         self.destroy()
 
