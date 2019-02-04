@@ -1,19 +1,12 @@
-import sys
+import csv
+import glob
+import rawpy
+import numpy as np
+
 from PySide2.QtWidgets import *
 from PySide2 import QtGui
 from PySide2 import QtCore
-import rawpy
-import numpy as np
-import csv
-import glob
 from rawkit.raw import Raw
-import qdarkstyle
-# import monitor
-# import threading
-# from watchdog.observers import Observer
-import watch
-import os
-import time
 
 class ImageWindow(QWidget):
 
@@ -113,7 +106,6 @@ class ImageWindow(QWidget):
 
         # Metat data is a namedtuple container
         with Raw(filename=self.image_path) as raw:
-            print(raw.metadata)
             self.iso_loaded = raw.metadata.iso
             self.ss_loaded = raw.metadata.shutter
             self.fstop_loaded = raw.metadata.aperture
@@ -152,11 +144,7 @@ class ImageWindow(QWidget):
             self.errorMessage(msg)
 
     def _rowConstructor(self, note=None):
-        # Need to populate the table with the new information
-        # Do I need to have a list of each table column for when I write out?
-        # Need to construct a string for the sections that were taken
-        # Need to make this whole thing into a function for Retake button
-        # Need to have a tracker for what sections have been clicked
+
         self.section_list = ''
         section_count_string = str(self.main_window.section_count)
         if self.section_a.isChecked() and self.section_a.isEnabled():
@@ -168,9 +156,7 @@ class ImageWindow(QWidget):
         if self.section_c.isChecked() and self.section_c.isEnabled():
             self.section_list += section_count_string + 'c;'
             self.main_window.section_c = True
-            # At this point, all of the section have been taken
-            # Need to update the count
-            self.main_window.section_count += 1
+
         if self.section_list == '':
             self.section_list = 'None'
 
@@ -204,9 +190,13 @@ class ImageWindow(QWidget):
         # Need to reset the image_distance
         self.main_window.image_distance = 0
         self.main_window.image_dist_label.setText('Image Distance: ' + str(0) + ' um')
-        # Reset the main labels
-        msg = "<font color=green>Everything Nominal</font>"
-        self.main_window.main_label.setText(msg)
+        # Reset the hit_button text to what it was before
+        msg = "HIT!!!"
+        self.main_window.hit_button.setText(msg)
+        self.main_window.hit_button.setStyleSheet("color: white")
+
+        # msg = self.main_window.main_label.text()
+        # self.main_window.main_label.setText(msg)
 
         # Update the main window list with the new row
         self._rowConstructor()
@@ -216,6 +206,21 @@ class ImageWindow(QWidget):
         # Make sure all the buttons have been restored to enable
         self.main_window.hit_button.setDisabled(False)
         self.main_window.main_table.setDisabled(False)
+
+        # Need to check if all sections have been taken
+        if self.main_window.section_a and self.main_window.section_b and self.main_window.section_c:
+            # Update the group section counter
+            self.main_window.section_count += 1
+            # Update the main message
+            msg = "<font color=green>Everything Nominal</font>"
+            self.main_window.main_label.setText(msg)
+            # Set the section trackers back to False
+            self.section_a = False
+            self.section_b = False
+            self.section_c = False
+
+
+
         self.close()
         self.destroy()
 

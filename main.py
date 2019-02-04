@@ -1,21 +1,18 @@
+import os
 import sys
+import csv
+import glob
+import rawpy
+import watch
+import qdarkstyle
+import numpy as np
+import subprocess as sp
+
 from PySide2.QtWidgets import *
 from PySide2 import QtGui
 from PySide2 import QtCore
-import rawpy
-import numpy as np
-import csv
-import glob
 from rawkit.raw import Raw
-import qdarkstyle
-import subprocess as sp
-# import monitor
-import threading
-# from watchdog.observers import Observer
-import watch
 from image import ImageWindow
-import os
-import time
 
 
 class MainWindow(QWidget):
@@ -32,7 +29,7 @@ class MainWindow(QWidget):
         self.large_text.setFamily('Helvetica')
         self.large_text.setPointSize(30)
 
-        # Set an over section counter
+        # Group section counter
         self.section_count = 1
 
         # Set trackers for what sections have been taken
@@ -112,7 +109,6 @@ class MainWindow(QWidget):
 
     def backup(self):
         '''Function for backing up the image directory'''
-        # print('Backup not implemented yet')
         # Create a list of the image files and the csv files and remove duplicates
         # Copy what ever is left
         image_list = glob.glob(self.image_dir + '/*.CR2')
@@ -122,8 +118,6 @@ class MainWindow(QWidget):
         backup_names = [x.split('/')[-1] for x in backup_list]
 
         copy_names = [x for x in image_names if x not in backup_names]
-
-        print(copy_names)
 
         for image in copy_names:
             sp.Popen(["cp", self.image_dir + '/' + image, self.backup_dir])
@@ -136,9 +130,19 @@ class MainWindow(QWidget):
         self.total_dist_label.setText('Total Distance: ' + str(self.total_distance) + ' um')
 
         if self.image_distance == 50:
-            temp = "<font color=red size=40>TAKE AN IMAGE</font>"
-            self.main_label.setText(temp)
+            msg = "TAKE AN IMAGE!!!"
+            self.hit_button.setText(msg)
+            self.hit_button.setStyleSheet("color: red")
             self.setEnabled(False)
+
+        # Need to deal with what happens when 250 is hit
+        if self.total_distance % 250 == 0:
+            msg = "<font color=red size=40>You should be taking sections</font>"
+            self.main_label.setText(msg)
+            # Need to make sure that the section buttons can be clicked again
+            self.section_a = False
+            self.section_b = False
+            self.section_c = False
 
     def populateTable(self):
 
@@ -171,11 +175,18 @@ class MainWindow(QWidget):
             self.main_table.setRowCount(shape[0])
             self.main_table.setColumnCount(shape[1])
 
+            # Update the total_distance
+            self.total_distance = int(self.table_list[-1][1])
+            self.total_dist_label.setText('Total Distance: ' + str(self.total_distance) + ' um')
+
             # Iterate through the items in the list and set the appropriate table items
             for i, row in enumerate(self.table_list):
                 for j, col in enumerate(row):
                     item = QTableWidgetItem(col)
                     self.main_table.setItem(i, j, item)
+
+        ### Need to make sure the CSV files get copied if they are not backed up
+        # this means we need to change when we populate the table
 
     def imageWindowLauncher(self, image_path):
         self.setEnabled(False)
