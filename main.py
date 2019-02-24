@@ -41,6 +41,9 @@ class MainWindow(QWidget):
         # Indicator for if the image has to be taken again
         self.retake = False
 
+        # Image counter
+        self.image_count = None
+
         # Set main window properties
         self.setGeometry(300, 300, 1000, 800)
         self.setWindowTitle('Recording Window')
@@ -72,7 +75,7 @@ class MainWindow(QWidget):
         # Disable the button after the directory has been chosen
         self.image_dir_button.setDisabled(True)
         # Start monitoring the directoy
-        self._startWatcher()
+        # self._startWatcher()
 
         # Do I need to have a file list on this object?
         if not self.backup_dir_button.isEnabled():
@@ -227,6 +230,9 @@ class MainWindow(QWidget):
         self.backup()
 
     def imageWindowLauncher(self, image_path):
+
+        # Need a catch in here to only call once
+
         self.setEnabled(False)
         self.image_window = ImageWindow(self.image_dir, self.backup_dir, image_path, self)
         self.image_window.show()
@@ -243,23 +249,85 @@ class MainWindow(QWidget):
         self.hit_button.setStyleSheet("color: red")
         self.setEnabled(False)
 
+    def _getImageName(self):
+
+        if self.image_count == None:
+            # CANNON
+            image_list = sorted(glob.glob(self.image_dir + '/*.NEF'))
+            if not image_list:
+                self.image_count = 1
+            else:
+                self.image_count = int(image_list[-1].split('_')[-2])
+                self.image_count += 1
+        else:
+            #Determine what number we are on
+            image_list = sorted(glob.glob(self.image_dir + '/*.NEF'))
+            self.image_count = int(image_list[-1].split('_')[-2])
+
+        # Now create a new name
+        surface = f"IMG_{self.image_count:04}_surface.NEF"
+        scatter = f"IMG_{self.image_count:04}_scatter.NEF"
+
+        self.image_count += 1
+
+        return surface, scatter
+
+
     def changeSS(self):
-        self.ss_drop.setDisabled(False)
+        self.ss_drop_surface.setDisabled(False)
 
     def changedSS(self):
-        self.ss_drop.setDisabled(True)
+        self.ss_drop_surface.setDisabled(True)
 
     def changeISO(self):
-        self.iso_drop.setDisabled(False)
+        self.iso_drop_surface.setDisabled(False)
 
     def changedISO(self):
-        self.iso_drop.setDisabled(True)
+        self.iso_drop_surface.setDisabled(True)
 
     def changeFStop(self):
-        self.fstop_drop.setDisabled(False)
+        self.fstop_drop_surface.setDisabled(False)
 
     def changedFStop(self):
-        self.fstop_drop.setDisabled(True)
+        self.fstop_drop_surface.setDisabled(True)
+
+    def capture_buttonClick(self):
+
+        # Get the image names
+        surface, scatter = self._getImageName()
+
+        iso = self.iso_drop_surface.currentText()
+        # Check the shutter speed
+        ss = float(self.ss_drop_surface.currentText())
+        # Check the fstop
+        fstop = self.fstop_drop_surface.currentText()
+
+        # Take the surface images
+        ## Command to turn on light a
+        p = sp.Popen(["gphoto2",
+                      "--set-config", f"iso={iso}",
+                      "--set-config", f"shutterspeed={1/ss}",
+                      "--set-config", f"f-number=f/{fstop}",
+                      f"--filename={surface}",
+                      "--capture-image-and-download"],
+                      stdout=sp.PIPE, cwd=f"{self.image_dir}/")
+        sout, _ = p.communicate()
+        p.wait()
+
+        # Change the image parameters somehow
+
+        p = sp.Popen(["gphoto2",
+                      "--set-config", f"iso={400}",
+                      "--set-config", f"shutterspeed={1/15}",
+                      "--set-config", f"f-number=f/{4.0}",
+                      f"--filename={scatter}",
+                      "--capture-image-and-download"],
+                      stdout=sp.PIPE, cwd=f"{self.image_dir}/")
+        sout, _ = p.communicate()
+        p.wait()
+
+
+        #gphoto2 --set-config iso=1000 --set-config shutterspeed=0.16662 --filename='Desktop/TEST_chagned.NEF' --capture-image-and-download
 
     def _startWatcher(self):
         # Create the other thread
@@ -296,22 +364,22 @@ class MainWindow(QWidget):
         # Set the line edits for the settings
         self.ss_values = ['2', '4', '8', '15', '30', '60',
                           '125', '250', '500']
-        self.ss_drop = QComboBox()
-        self.ss_drop.addItems(self.ss_values)
-        self.ss_drop.setCurrentIndex(5)
-        self.ss_drop.currentIndexChanged.connect(self.changedSS)
+        self.ss_drop_surface = QComboBox()
+        self.ss_drop_surface.addItems(self.ss_values)
+        self.ss_drop_surface.setCurrentIndex(5)
+        self.ss_drop_surface.currentIndexChanged.connect(self.changedSS)
 
         self.fstop_values = ['1.4', '2.0', '2.8', '4.0', '5.6', '8.0']
-        self.fstop_drop = QComboBox()
-        self.fstop_drop.addItems(self.fstop_values)
-        self.fstop_drop.setCurrentIndex(5)
-        self.fstop_drop.currentIndexChanged.connect(self.changedFStop)
+        self.fstop_drop_surface = QComboBox()
+        self.fstop_drop_surface.addItems(self.fstop_values)
+        self.fstop_drop_surface.setCurrentIndex(5)
+        self.fstop_drop_surface.currentIndexChanged.connect(self.changedFStop)
 
         self.iso_values = ['100', '200', '400', '800', '1600']
-        self.iso_drop = QComboBox()
-        self.iso_drop.addItems(self.iso_values)
-        self.iso_drop.setCurrentIndex(1)
-        self.iso_drop.currentIndexChanged.connect(self.changedISO)
+        self.iso_drop_surface = QComboBox()
+        self.iso_drop_surface.addItems(self.iso_values)
+        self.iso_drop_surface.setCurrentIndex(1)
+        self.iso_drop_surface.currentIndexChanged.connect(self.changedISO)
 
         # Set the font for the buttons
         self.iso_button.setFont(self.small_text)
@@ -327,17 +395,17 @@ class MainWindow(QWidget):
         # make the table expand over the button
         self.main_table.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
 
-        self.iso_drop.setDisabled(True)
-        self.fstop_drop.setDisabled(True)
-        self.ss_drop.setDisabled(True)
+        self.iso_drop_surface.setDisabled(True)
+        self.fstop_drop_surface.setDisabled(True)
+        self.ss_drop_surface.setDisabled(True)
 
         settings_layout = QGridLayout()
         settings_layout.addWidget(self.iso_button, 0, 0)
         settings_layout.addWidget(self.fstop_button, 1, 0)
         settings_layout.addWidget(self.ss_button, 2, 0)
-        settings_layout.addWidget(self.iso_drop, 0, 1)
-        settings_layout.addWidget(self.fstop_drop, 1, 1)
-        settings_layout.addWidget(self.ss_drop, 2, 1)
+        settings_layout.addWidget(self.iso_drop_surface, 0, 1)
+        settings_layout.addWidget(self.fstop_drop_surface, 1, 1)
+        settings_layout.addWidget(self.ss_drop_surface, 2, 1)
         settings_layout.setColumnStretch(0, 10)
         settings_layout.setColumnStretch(1, 20)
 
@@ -357,6 +425,7 @@ class MainWindow(QWidget):
         # Add the directory buttons
         self.image_dir_button =  QPushButton("Select Image Folder")
         self.backup_dir_button =  QPushButton("Select Backup Folder")
+        self.capture_button = QPushButton("Capture Images")
 
         # Add the directory labels
         self.image_dir_label = QLabel()
@@ -371,9 +440,11 @@ class MainWindow(QWidget):
         self.main_label.setFont(self.small_text)
         self.image_dir_button.setFont(self.small_text)
         self.backup_dir_button.setFont(self.small_text)
+        self.capture_button.setFont(self.large_text)
 
         # Set the size policy for the label so it expands vertically
         self.main_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
+        self.capture_button.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
 
         # Initalize the messages for the main label and the directories
         msg = "<font color=red>Please select the Image and Backup Directories</font>"
@@ -393,16 +464,19 @@ class MainWindow(QWidget):
         # Connect the buttons to their functions
         self.image_dir_button.clicked.connect(self.image_dir_buttonClick)
         self.backup_dir_button.clicked.connect(self.backup_dir_buttonClick)
+        self.capture_button.clicked.connect(self.capture_buttonClick)
 
         # Define the layout for the main window
         layout = QGridLayout()
         layout.setColumnStretch(0, 0)
         layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(2, 1)
         layout.addWidget(self.image_dir_button, 0, 0)
         layout.addWidget(self.image_dir_label, 0, 1)
         layout.addWidget(self.backup_dir_button, 1, 0)
         layout.addWidget(self.backup_dir_label, 1, 1)
-        layout.addWidget(self.main_label, 2, 0, 1, 2)
+        layout.addWidget(self.capture_button, 0, 2, 2, 1)
+        layout.addWidget(self.main_label, 2, 0, 1, 3)
 
         return layout
 
@@ -470,6 +544,6 @@ if __name__ == '__main__':
 
     window.show()
     app.exec_()
-    window.watcher.stop()
-    window.thread.quit()
-    window.thread.wait()
+    # window.watcher.stop()
+    # window.thread.quit()
+    # window.thread.wait()
