@@ -4,6 +4,7 @@ import csv
 import glob
 import rawpy
 import watch
+import serial
 import qdarkstyle
 import numpy as np
 import subprocess as sp
@@ -44,6 +45,9 @@ class MainWindow(QWidget):
         # Image counter
         self.image_count = None
 
+        # Create the arduino connection
+        # self.arduino = serial.Serial('COM1', 115200, timeout=0.1)
+
         # Set main window properties
         self.setGeometry(300, 300, 1000, 800)
         self.setWindowTitle('Recording Window')
@@ -81,9 +85,9 @@ class MainWindow(QWidget):
         if not self.backup_dir_button.isEnabled():
             self.main_table.setDisabled(False)
             self.hit_button.setDisabled(False)
-            self.iso_button.setDisabled(False)
-            self.fstop_button.setDisabled(False)
-            self.ss_button.setDisabled(False)
+            self.iso_button_surface.setDisabled(False)
+            self.fstop_button_surface.setDisabled(False)
+            self.ss_button_surface.setDisabled(False)
             # msg = "<font color=green>Everything Nominal</font>"
             # self.main_label.setText(msg)
             # Populate the table
@@ -109,9 +113,9 @@ class MainWindow(QWidget):
         if not self.image_dir_button.isEnabled():
             self.main_table.setDisabled(False)
             self.hit_button.setDisabled(False)
-            self.iso_button.setDisabled(False)
-            self.fstop_button.setDisabled(False)
-            self.ss_button.setDisabled(False)
+            self.iso_button_surface.setDisabled(False)
+            self.fstop_button_surface.setDisabled(False)
+            self.ss_button_surface.setDisabled(False)
             # temp = "<font color=green>Everything Nominal</font>"
             # self.main_label.setText(temp)
             # Populate the table
@@ -272,23 +276,40 @@ class MainWindow(QWidget):
 
         return surface, scatter
 
-
-    def changeSS(self):
+    def changeSurfaceSS(self):
         self.ss_drop_surface.setDisabled(False)
 
-    def changedSS(self):
+    def changedSurfaceSS(self):
         self.ss_drop_surface.setDisabled(True)
 
-    def changeISO(self):
+    def changeSurfaceISO(self):
         self.iso_drop_surface.setDisabled(False)
 
-    def changedISO(self):
+    def changedSurfaceISO(self):
         self.iso_drop_surface.setDisabled(True)
 
-    def changeFStop(self):
+    def changeSurfaceFStop(self):
         self.fstop_drop_surface.setDisabled(False)
 
-    def changedFStop(self):
+    def changedSurfaceFStop(self):
+        self.fstop_drop_surface.setDisabled(True)
+
+    def changeScatterSS(self):
+        self.ss_drop_surface.setDisabled(False)
+
+    def changedScatterSS(self):
+        self.ss_drop_surface.setDisabled(True)
+
+    def changeScatterISO(self):
+        self.iso_drop_surface.setDisabled(False)
+
+    def changedScatterISO(self):
+        self.iso_drop_surface.setDisabled(True)
+
+    def changeScatterFStop(self):
+        self.fstop_drop_surface.setDisabled(False)
+
+    def changedScatterFStop(self):
         self.fstop_drop_surface.setDisabled(True)
 
     def capture_buttonClick(self):
@@ -296,38 +317,41 @@ class MainWindow(QWidget):
         # Get the image names
         surface, scatter = self._getImageName()
 
-        iso = self.iso_drop_surface.currentText()
-        # Check the shutter speed
-        ss = float(self.ss_drop_surface.currentText())
-        # Check the fstop
-        fstop = self.fstop_drop_surface.currentText()
+        surface_iso = self.iso_drop_surface.currentText()
+        surface_ss = float(self.ss_drop_surface.currentText())
+        surface_fstop = self.fstop_drop_surface.currentText()
+
+        scatter_iso = self.iso_drop_scatter.currentText()
+        scatter_ss = float(self.ss_drop_scatter.currentText())
+        scatter_fstop = self.fstop_drop_scatter.currentText()
 
         # Take the surface images
         ## Command to turn on light a
+        self.arduino.write(b'a')
         p = sp.Popen(["gphoto2",
-                      "--set-config", f"iso={iso}",
-                      "--set-config", f"shutterspeed={1/ss}",
-                      "--set-config", f"f-number=f/{fstop}",
+                      "--set-config", f"iso={surface_iso}",
+                      "--set-config", f"shutterspeed={1/surface_ss}",
+                      "--set-config", f"f-number=f/{surface_fstop}",
                       f"--filename={surface}",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
         sout, _ = p.communicate()
         p.wait()
 
-        # Change the image parameters somehow
-
+        # Turn on the next light
+        self.arduino.write(b'b')
         p = sp.Popen(["gphoto2",
-                      "--set-config", f"iso={400}",
-                      "--set-config", f"shutterspeed={1/15}",
-                      "--set-config", f"f-number=f/{4.0}",
+                      "--set-config", f"iso={scatter_iso}",
+                      "--set-config", f"shutterspeed={1/scatter_ss}",
+                      "--set-config", f"f-number=f/{scatter_fstop}",
                       f"--filename={scatter}",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
         sout, _ = p.communicate()
         p.wait()
 
-
-        #gphoto2 --set-config iso=1000 --set-config shutterspeed=0.16662 --filename='Desktop/TEST_chagned.NEF' --capture-image-and-download
+        # Turn off both lights
+        self.arduino.write(b'c')
 
     def _startWatcher(self):
         # Create the other thread
@@ -351,63 +375,115 @@ class MainWindow(QWidget):
                              "Shutter Speed", "ISO", "Aperature", "Notes"]
         self.main_table.setHorizontalHeaderLabels(self.columnLabels)
 
-        # Set buttons for the camera settings
-        self.iso_button = QPushButton("ISO")
-        self.fstop_button = QPushButton("FStop")
-        self.ss_button = QPushButton("SS")
+        # Set buttons for the camera settings for the surface image
+        surface_label = QLabel("Surface Image Settings")
+        self.iso_button_surface = QPushButton("ISO")
+        self.fstop_button_surface = QPushButton("FStop")
+        self.ss_button_surface = QPushButton("SS")
 
-        # Connect the buttons
-        self.iso_button.clicked.connect(self.changeISO)
-        self.fstop_button.clicked.connect(self.changeFStop)
-        self.ss_button.clicked.connect(self.changeSS)
+        # Set buttons for the camera settings for the scatter image
+        scatter_label = QLabel("Scatter Image Settings")
+        self.iso_button_scatter = QPushButton("ISO")
+        self.fstop_button_scatter = QPushButton("ISO")
+        self.ss_button_scatter = QPushButton("ISO")
+
+        # Connect the buttons for the surface image
+        self.iso_button_surface.clicked.connect(self.changeSurfaceISO)
+        self.fstop_button_surface.clicked.connect(self.changeSurfaceFStop)
+        self.ss_button_surface.clicked.connect(self.changeSurfaceSS)
+
+        # Connect the buttons for the scatter image
+        self.iso_button_scatter.clicked.connect(self.changeScatterISO)
+        self.fstop_button_scatter.clicked.connect(self.changeScatterFStop)
+        self.ss_button_scatter.clicked.connect(self.changeScatterSS)
 
         # Set the line edits for the settings
         self.ss_values = ['2', '4', '8', '15', '30', '60',
-                          '125', '250', '500']
+                          '125', '250', '320', '500']
         self.ss_drop_surface = QComboBox()
         self.ss_drop_surface.addItems(self.ss_values)
         self.ss_drop_surface.setCurrentIndex(5)
-        self.ss_drop_surface.currentIndexChanged.connect(self.changedSS)
+        self.ss_drop_surface.currentIndexChanged.connect(self.changedSurfaceSS)
+
+        self.ss_drop_scatter = QComboBox()
+        self.ss_drop_scatter.addItems(self.ss_values)
+        self.ss_drop_scatter.setCurrentIndex(8)
+        self.ss_drop_scatter.currentIndexChanged.connect(self.changedScatterSS)
 
         self.fstop_values = ['1.4', '2.0', '2.8', '4.0', '5.6', '8.0']
         self.fstop_drop_surface = QComboBox()
         self.fstop_drop_surface.addItems(self.fstop_values)
         self.fstop_drop_surface.setCurrentIndex(5)
-        self.fstop_drop_surface.currentIndexChanged.connect(self.changedFStop)
+        self.fstop_drop_surface.currentIndexChanged.connect(self.changedSurfaceFStop)
+
+        self.fstop_drop_scatter = QComboBox()
+        self.fstop_drop_scatter.addItems(self.fstop_values)
+        self.fstop_drop_scatter.setCurrentIndex(5)
+        self.fstop_drop_scatter.currentIndexChanged.connect(self.changedScatterFStop)
 
         self.iso_values = ['100', '200', '400', '800', '1600']
         self.iso_drop_surface = QComboBox()
         self.iso_drop_surface.addItems(self.iso_values)
         self.iso_drop_surface.setCurrentIndex(1)
-        self.iso_drop_surface.currentIndexChanged.connect(self.changedISO)
+        self.iso_drop_surface.currentIndexChanged.connect(self.changedSurfaceISO)
+
+        self.iso_drop_scatter = QComboBox()
+        self.iso_drop_scatter.addItems(self.iso_values)
+        self.iso_drop_scatter.setCurrentIndex(1)
+        self.iso_drop_scatter.currentIndexChanged.connect(self.changedScatterISO)
 
         # Set the font for the buttons
-        self.iso_button.setFont(self.small_text)
-        self.fstop_button.setFont(self.small_text)
-        self.ss_button.setFont(self.small_text)
+        self.iso_button_surface.setFont(self.small_text)
+        self.fstop_button_surface.setFont(self.small_text)
+        self.ss_button_surface.setFont(self.small_text)
+
+        self.iso_button_scatter.setFont(self.small_text)
+        self.fstop_button_scatter.setFont(self.small_text)
+        self.ss_button_scatter.setFont(self.small_text)
 
         # Initally disable the table until the directories have been chosen
         self.main_table.setDisabled(True)
-        self.iso_button.setDisabled(True)
-        self.fstop_button.setDisabled(True)
-        self.ss_button.setDisabled(True)
+        self.iso_button_surface.setDisabled(True)
+        self.fstop_button_surface.setDisabled(True)
+        self.ss_button_surface.setDisabled(True)
+
+        self.iso_button_scatter.setDisabled(True)
+        self.fstop_button_scatter.setDisabled(True)
+        self.ss_button_scatter.setDisabled(True)
 
         # make the table expand over the button
         self.main_table.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
+
+        # Center the lables
+        scatter_label.setAlignment(QtCore.Qt.AlignCenter)
+        surface_label.setAlignment(QtCore.Qt.AlignCenter)
 
         self.iso_drop_surface.setDisabled(True)
         self.fstop_drop_surface.setDisabled(True)
         self.ss_drop_surface.setDisabled(True)
 
+        self.iso_drop_scatter.setDisabled(True)
+        self.fstop_drop_scatter.setDisabled(True)
+        self.ss_drop_scatter.setDisabled(True)
+
         settings_layout = QGridLayout()
-        settings_layout.addWidget(self.iso_button, 0, 0)
-        settings_layout.addWidget(self.fstop_button, 1, 0)
-        settings_layout.addWidget(self.ss_button, 2, 0)
-        settings_layout.addWidget(self.iso_drop_surface, 0, 1)
-        settings_layout.addWidget(self.fstop_drop_surface, 1, 1)
-        settings_layout.addWidget(self.ss_drop_surface, 2, 1)
+        settings_layout.addWidget(surface_label, 0, 0, 1, 2)
+        settings_layout.addWidget(self.iso_button_surface, 1, 0)
+        settings_layout.addWidget(self.fstop_button_surface, 2, 0)
+        settings_layout.addWidget(self.ss_button_surface, 3, 0)
+        settings_layout.addWidget(self.iso_drop_surface, 1, 1)
+        settings_layout.addWidget(self.fstop_drop_surface, 2, 1)
+        settings_layout.addWidget(self.ss_drop_surface, 3, 1)
+        settings_layout.addWidget(scatter_label, 4, 0, 1, 2)
+        settings_layout.addWidget(self.iso_button_scatter, 5, 0)
+        settings_layout.addWidget(self.fstop_button_scatter, 6, 0)
+        settings_layout.addWidget(self.ss_button_scatter, 7, 0)
+        settings_layout.addWidget(self.iso_drop_scatter, 5, 1)
+        settings_layout.addWidget(self.fstop_drop_scatter, 6, 1)
+        settings_layout.addWidget(self.ss_drop_scatter, 7, 1)
         settings_layout.setColumnStretch(0, 10)
-        settings_layout.setColumnStretch(1, 20)
+        settings_layout.setColumnStretch(1, 30)
+        # settings_layout.setColumnStretch(2, 10)
 
         # settings_layout.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
         # Make the talbe have its own layout
