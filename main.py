@@ -2,6 +2,7 @@ import os
 import sys
 import csv
 import glob
+import time
 import rawpy
 import watch
 import serial
@@ -46,8 +47,11 @@ class MainWindow(QWidget):
         self.image_count = None
 
         # Create the arduino connection
-        # self.arduino = serial.Serial('COM1', 115200, timeout=0.1)
-
+        try:
+            self.arduino = serial.Serial('/dev/tty.usbmodem1411', 9600)
+        except IOError:
+            print("You don't have the right arduino port.")
+            sys.exit()
         # Set main window properties
         self.setGeometry(300, 300, 1000, 800)
         self.setWindowTitle('Recording Window')
@@ -258,15 +262,17 @@ class MainWindow(QWidget):
         if self.image_count == None:
             # CANNON
             image_list = sorted(glob.glob(self.image_dir + '/*.NEF'))
+            print('image_list')
             if not image_list:
                 self.image_count = 1
             else:
                 self.image_count = int(image_list[-1].split('_')[-2])
                 self.image_count += 1
-        else:
-            #Determine what number we are on
-            image_list = sorted(glob.glob(self.image_dir + '/*.NEF'))
-            self.image_count = int(image_list[-1].split('_')[-2])
+        # else:
+        #     #Determine what number we are on
+        #     # image_list = sorted(glob.glob(self.image_dir + '/*.NEF'))
+        #     self.image_count = int(image_list[-1].split('_')[-2])
+        #     self.image_count += 1
 
         # Now create a new name
         surface = f"IMG_{self.image_count:04}_surface.NEF"
@@ -339,7 +345,9 @@ class MainWindow(QWidget):
         p.wait()
 
         # Turn on the next light
+
         self.arduino.write(b'b')
+        time.sleep(0.1)
         p = sp.Popen(["gphoto2",
                       "--set-config", f"iso={scatter_iso}",
                       "--set-config", f"shutterspeed={1/scatter_ss}",
