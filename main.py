@@ -53,7 +53,7 @@ class MainWindow(QWidget):
             print("You don't have the right arduino port.")
             sys.exit()
         # Set main window properties
-        self.setGeometry(300, 300, 1000, 800)
+        self.setGeometry(300, 300, 1200, 800)
         self.setWindowTitle('Recording Window')
 
         # Call the functions for initialzing the layouts
@@ -86,17 +86,18 @@ class MainWindow(QWidget):
         # self._startWatcher()
 
         # Do I need to have a file list on this object?
-        if not self.backup_dir_button.isEnabled():
-            self.main_table.setDisabled(False)
-            self.hit_button.setDisabled(False)
-            self.iso_button_surface.setDisabled(False)
-            self.fstop_button_surface.setDisabled(False)
-            self.ss_button_surface.setDisabled(False)
+        # if not self.backup_dir_button.isEnabled():
+            # self.main_table.setDisabled(False)
+            # self.hit_button.setDisabled(False)
+            # self.iso_button_surface.setDisabled(False)
+            # self.fstop_button_surface.setDisabled(False)
+            # self.ss_button_surface.setDisabled(False)
             # msg = "<font color=green>Everything Nominal</font>"
             # self.main_label.setText(msg)
-            # Populate the table
-            self.populateTable()
-            self.calibrationImage()
+        self.backup_dir_button.setEnabled(True)
+        # Populate the table
+        self.populateTable()
+            # self.calibrationImage()
 
 
     def backup_dir_buttonClick(self):
@@ -114,23 +115,31 @@ class MainWindow(QWidget):
             os.makedirs(self.backup_dir + '/csv_files/')
 
         # Only if both directories have been selected do we enable the rest of the GUI
-        if not self.image_dir_button.isEnabled():
-            self.main_table.setDisabled(False)
-            self.hit_button.setDisabled(False)
-            self.iso_button_surface.setDisabled(False)
-            self.fstop_button_surface.setDisabled(False)
-            self.ss_button_surface.setDisabled(False)
+        # if not self.image_dir_button.isEnabled():
+        self.main_table.setDisabled(False)
+        self.hit_button.setDisabled(False)
+        self.iso_button_surface.setDisabled(False)
+        self.fstop_button_surface.setDisabled(False)
+        self.ss_button_surface.setDisabled(False)
+        self.iso_button_scatter.setDisabled(False)
+        self.fstop_button_scatter.setDisabled(False)
+        self.ss_button_scatter.setDisabled(False)
+        self.capture_button.setDisabled(False)
             # temp = "<font color=green>Everything Nominal</font>"
             # self.main_label.setText(temp)
             # Populate the table
-            self.populateTable()
-            self.calibrationImage()
+            # self.populateTable()
+            # self.calibrationImage()
 
     def backup(self):
         '''Function for backing up the image directory'''
         # Create a list of the image files is the main and backup dirs
-        image_list = glob.glob(self.image_dir + '/*.CR2')
-        backup_list = glob.glob(self.backup_dir + '/*.CR2')
+        image_list = glob.glob(self.image_dir + '/*.cr2')
+        backup_list = glob.glob(self.backup_dir + '/*.cr2')
+
+        # Add the JPEGs
+        image_list += glob.glob(self.image_dir + '/*.jpg')
+        backup_list += glob.glob(self.backup_dir + '/*.jpg')
 
         # Create a list of CSV files
         csv_main_list = glob.glob(self.image_dir + '/csv_files/*')
@@ -154,7 +163,7 @@ class MainWindow(QWidget):
         for file in csv_names:
             sp.Popen(["cp", self.image_dir + '/csv_files/' +
                       file, self.backup_dir + '/csv_files/'])
-
+        # Do we need to wait here?
 
     def hit_buttonClick(self):
 
@@ -167,7 +176,8 @@ class MainWindow(QWidget):
             msg = "TAKE AN IMAGE!!!"
             self.hit_button.setText(msg)
             self.hit_button.setStyleSheet("color: red")
-            self.setEnabled(False)
+            self.main_table.setEnabled(False)
+            self.hit_button.setEnabled(False)
 
         # Need to deal with what happens when 250 is hit
         if self.total_distance % 250 == 0:
@@ -183,7 +193,7 @@ class MainWindow(QWidget):
     def populateTable(self):
 
         # Check for CSV files
-        self.csv_list = glob.glob(self.image_dir + '/csv_files/*')
+        self.csv_list = sorted(glob.glob(self.image_dir + '/csv_files/*'))
 
         # If the directory is empty then make a folder
         if self.csv_list == []:
@@ -226,7 +236,7 @@ class MainWindow(QWidget):
         path = self.image_dir + '/csv_files/'
         # Append the image name to the csv - will make it different
         name = 'csv_depth_{0}_'.format(str(self.total_distance).zfill(4))
-        name += self.table_list[-1][0]
+        name += self.table_list[-1][0][0]
         name += '.csv'
 
         with open(path + name, mode='w') as f:
@@ -237,31 +247,31 @@ class MainWindow(QWidget):
         # Backup to make sure the CSV file gets copied
         self.backup()
 
-    def imageWindowLauncher(self, image_path):
+    def imageWindowLauncher(self):
 
         # Need a catch in here to only call once
 
         self.setEnabled(False)
-        self.image_window = ImageWindow(self.image_dir, self.backup_dir, image_path, self)
+        self.image_window = ImageWindow(self.image_dir, self.backup_dir, self)
         self.image_window.show()
         app.processEvents()
         self.image_window.loadImage()
         self.backup()
 
-    def calibrationImage(self):
-        msg = "<font color=red>Face the block and take a calibration image.</font>"
-        self.main_label.setText(msg)
-
-        msg = "TAKE AN IMAGE!!!"
-        self.hit_button.setText(msg)
-        self.hit_button.setStyleSheet("color: red")
-        self.setEnabled(False)
+    # def calibrationImage(self):
+    #     msg = "<font color=red>Face the block and take a calibration image.</font>"
+    #     self.main_label.setText(msg)
+    #
+    #     msg = "TAKE AN IMAGE!!!"
+    #     self.hit_button.setText(msg)
+    #     self.hit_button.setStyleSheet("color: red")
+    #     self.setEnabled(False)
 
     def _getImageName(self):
 
         if self.image_count == None:
             # CANNON
-            image_list = sorted(glob.glob(self.image_dir + '/*.NEF'))
+            image_list = sorted(glob.glob(self.image_dir + '/*.nef'))
             print('image_list')
             if not image_list:
                 self.image_count = 1
@@ -275,12 +285,10 @@ class MainWindow(QWidget):
         #     self.image_count += 1
 
         # Now create a new name
-        surface = f"IMG_{self.image_count:04}_surface.NEF"
-        scatter = f"IMG_{self.image_count:04}_scatter.NEF"
+        self.surface_path = f"IMG_{self.image_count:04}_surface"
+        self.scatter_path = f"IMG_{self.image_count:04}_scatter"
 
         self.image_count += 1
-
-        return surface, scatter
 
     def changeSurfaceSS(self):
         self.ss_drop_surface.setDisabled(False)
@@ -301,27 +309,27 @@ class MainWindow(QWidget):
         self.fstop_drop_surface.setDisabled(True)
 
     def changeScatterSS(self):
-        self.ss_drop_surface.setDisabled(False)
+        self.ss_drop_scatter.setDisabled(False)
 
     def changedScatterSS(self):
-        self.ss_drop_surface.setDisabled(True)
+        self.ss_drop_scatter.setDisabled(True)
 
     def changeScatterISO(self):
-        self.iso_drop_surface.setDisabled(False)
+        self.iso_drop_scatter.setDisabled(False)
 
     def changedScatterISO(self):
-        self.iso_drop_surface.setDisabled(True)
+        self.iso_drop_scatter.setDisabled(True)
 
     def changeScatterFStop(self):
-        self.fstop_drop_surface.setDisabled(False)
+        self.fstop_drop_scatter.setDisabled(False)
 
     def changedScatterFStop(self):
-        self.fstop_drop_surface.setDisabled(True)
+        self.fstop_drop_scatter.setDisabled(True)
 
     def capture_buttonClick(self):
 
         # Get the image names
-        surface, scatter = self._getImageName()
+        self._getImageName()
 
         surface_iso = self.iso_drop_surface.currentText()
         surface_ss = float(self.ss_drop_surface.currentText())
@@ -334,25 +342,30 @@ class MainWindow(QWidget):
         # Take the surface images
         ## Command to turn on light a
         self.arduino.write(b'a')
+        time.sleep(0.1)
+        # print('image 1: ' + surface_iso)
         p = sp.Popen(["gphoto2",
                       "--set-config", f"iso={surface_iso}",
                       "--set-config", f"shutterspeed={1/surface_ss}",
                       "--set-config", f"f-number=f/{surface_fstop}",
-                      f"--filename={surface}",
+                      # f"--filename={self.surface_path + '.%C'}",
+                      # "--force-overwrite",
+                      f"--filename={self.surface_path + '.%C'}",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
+
         sout, _ = p.communicate()
         p.wait()
 
-        # Turn on the next light
-
         self.arduino.write(b'b')
         time.sleep(0.1)
+        # print('image 2: ' + scatter_iso)
         p = sp.Popen(["gphoto2",
                       "--set-config", f"iso={scatter_iso}",
                       "--set-config", f"shutterspeed={1/scatter_ss}",
                       "--set-config", f"f-number=f/{scatter_fstop}",
-                      f"--filename={scatter}",
+                      # "--force-overwrite",
+                      f"--filename={self.scatter_path + '.%C'}",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
         sout, _ = p.communicate()
@@ -360,20 +373,21 @@ class MainWindow(QWidget):
 
         # Turn off both lights
         self.arduino.write(b'c')
+        self.imageWindowLauncher()
 
-    def _startWatcher(self):
-        # Create the other thread
-        self.thread = QtCore.QThread(self)
-        # Create a watcher object
-        self.watcher = watch.QWatcher(self.image_dir)
-        # Connect the signal on the watcher with the launch window function
-        self.watcher.image_signal.connect(self.imageWindowLauncher)
-        # Move the watcher object to the other thread that was created
-        self.watcher.moveToThread(self.thread)
-        # Connect the thread.start with the run function on the watcher object
-        self.thread.started.connect(self.watcher.run)
-        # Start the thread
-        self.thread.start()
+    # def _startWatcher(self):
+    #     # Create the other thread
+    #     self.thread = QtCore.QThread(self)
+    #     # Create a watcher object
+    #     self.watcher = watch.QWatcher(self.image_dir)
+    #     # Connect the signal on the watcher with the launch window function
+    #     self.watcher.image_signal.connect(self.imageWindowLauncher)
+    #     # Move the watcher object to the other thread that was created
+    #     self.watcher.moveToThread(self.thread)
+    #     # Connect the thread.start with the run function on the watcher object
+    #     self.thread.started.connect(self.watcher.run)
+    #     # Start the thread
+    #     self.thread.start()
 
     def _initTableLayout(self):
         '''Initalize the table layout'''
@@ -392,8 +406,8 @@ class MainWindow(QWidget):
         # Set buttons for the camera settings for the scatter image
         scatter_label = QLabel("Scatter Image Settings")
         self.iso_button_scatter = QPushButton("ISO")
-        self.fstop_button_scatter = QPushButton("ISO")
-        self.ss_button_scatter = QPushButton("ISO")
+        self.fstop_button_scatter = QPushButton("FStop")
+        self.ss_button_scatter = QPushButton("SS")
 
         # Connect the buttons for the surface image
         self.iso_button_surface.clicked.connect(self.changeSurfaceISO)
@@ -474,6 +488,12 @@ class MainWindow(QWidget):
         self.fstop_drop_scatter.setDisabled(True)
         self.ss_drop_scatter.setDisabled(True)
 
+        header = self.main_table.horizontalHeader()
+
+        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(6, QHeaderView.Stretch)
+        # header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+
         settings_layout = QGridLayout()
         settings_layout.addWidget(surface_label, 0, 0, 1, 2)
         settings_layout.addWidget(self.iso_button_surface, 1, 0)
@@ -499,7 +519,7 @@ class MainWindow(QWidget):
         layout = QGridLayout()
         layout.addWidget(self.main_table, 0, 0)
         layout.addLayout(settings_layout, 0, 1)
-        layout.setColumnStretch(0, 40)
+        layout.setColumnStretch(0, 50)
         layout.setColumnStretch(1, 10)
 
         return layout
@@ -549,6 +569,10 @@ class MainWindow(QWidget):
         self.image_dir_button.clicked.connect(self.image_dir_buttonClick)
         self.backup_dir_button.clicked.connect(self.backup_dir_buttonClick)
         self.capture_button.clicked.connect(self.capture_buttonClick)
+
+        # Diable the backup directory button at first
+        self.backup_dir_button.setEnabled(False)
+        self.capture_button.setEnabled(False)
 
         # Define the layout for the main window
         layout = QGridLayout()

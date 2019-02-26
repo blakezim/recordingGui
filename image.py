@@ -10,16 +10,15 @@ from rawkit.raw import Raw
 
 class ImageWindow(QWidget):
 
-    def __init__(self, image_dir, backup_dir, image_path, main, parent=None):
+    def __init__(self, image_dir, backup_dir, main, parent=None):
         super(ImageWindow, self).__init__(parent)
 
         # Set main window properties
-        self.setGeometry(300, 300, 800, 300)
+        self.setGeometry(300, 300, 1200, 300)
         self.setWindowTitle('Image Window')
 
         self.image_dir = image_dir
         self.backup_dir = backup_dir
-        self.image_path = image_path
         self.main_window = main
 
         self.setLayout(self.initLayout())
@@ -33,7 +32,8 @@ class ImageWindow(QWidget):
         self.iso_label = QLabel("ISO: ")
         self.fstop_label = QLabel("FStop: ")
         self.ss_label = QLabel("SS: ")
-        self.image_label = QLabel("Loading...")
+        self.surface_label = QLabel("Loading...")
+        self.scatter_label = QLabel("Loading...")
         self.notes_edit = QLineEdit("No notes")
 
         self.retake_button.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
@@ -67,7 +67,8 @@ class ImageWindow(QWidget):
         # Initially disable the accept button until image has been validated
         self.accept_button.setDisabled(True)
 
-        self.image_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.surface_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.scatter_label.setAlignment(QtCore.Qt.AlignCenter)
 
         gridLayout = QGridLayout()
         gridLayout.addWidget(self.retake_button, 0, 0, 1, 3)
@@ -82,66 +83,101 @@ class ImageWindow(QWidget):
 
         layout = QGridLayout()
         layout.addLayout(gridLayout, 0, 0)
-        layout.addWidget(self.image_label, 0, 1)
+        layout.addWidget(self.surface_label, 0, 1)
+        layout.addWidget(self.scatter_label, 0, 2)
         # layout.setColumnStretch(0, 10)
         # layout.setColumnStretch(1, 15)
-        # self.image_label.setText(self.image_path)
+        # self.surface_label.setText(self.image_path)
 
         return layout
 
 
     def loadImage(self):
 
-        # pth = '/Users/blakez/Documents/TestingGUI/testingMaterials/IMG_0001.cr2'
-        # im = Raw(pth)
-        # rgb = np.array(im.to_buffer())
-        img = rawpy.imread(self.image_path)
-        test = img.postprocess()
+        loader = QtGui.QImage()
+        loader.load(self.image_dir + '/' + self.main_window.surface_path + '.jpg')
 
-        a = QtGui.QImage(test.copy(), test.shape[1], test.shape[0],
-                        test.strides[0], QtGui.QImage.Format_RGB888)
-        map = QtGui.QPixmap(a)
-        new = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
-        self.image_label.setPixmap(new)
+        map = QtGui.QPixmap(loader)
+        scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
+        self.surface_label.setPixmap(scaled_map)
 
+        loader.load(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')
+
+        map = QtGui.QPixmap(loader)
+        scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
+        self.scatter_label.setPixmap(scaled_map)
+
+        # How long does metadata take
         # Metat data is a namedtuple container
-        with Raw(filename=self.image_path) as raw:
-            self.iso_loaded = raw.metadata.iso
-            self.ss_loaded = raw.metadata.shutter
-            self.fstop_loaded = raw.metadata.aperture
+        with Raw(filename=self.image_dir + '/' + self.main_window.surface_path + '.nef') as raw:
+            self.iso_loaded_surface = raw.metadata.iso
+            self.ss_loaded_surface = raw.metadata.shutter
+            self.fstop_loaded_surface = np.around(raw.metadata.aperture, 1)
         # Convert the shutter speed to a number
-        self.ss_loaded = int(np.ceil(1 / self.ss_loaded))
-        # Validate the image settings are correct
-        self.validateImage()
+        self.ss_loaded_surface = int(np.ceil(1 / self.ss_loaded_surface))
+        self.validateSurfaceImage()
 
+        with Raw(filename=self.image_dir + '/' + self.main_window.scatter_path + '.nef') as raw:
+            self.iso_loaded_scatter = raw.metadata.iso
+            self.ss_loaded_scatter = raw.metadata.shutter
+            self.fstop_loaded_scatter = np.around(raw.metadata.aperture, 1)
+        # Convert the shutter speed to a number
+        self.ss_loaded_scatter = int(np.ceil(1 / self.ss_loaded_scatter))
+        self.validateScatterImage()
 
-        self.iso_label.setText("ISO:   " + str(self.iso_loaded))
-        self.fstop_label.setText("FStop:   " + str(self.fstop_loaded))
-        self.ss_label.setText("SS:   " + str(self.ss_loaded))
+        self.iso_label.setText("ISO: " + str([self.iso_loaded_surface, self.iso_loaded_scatter]))
+        self.fstop_label.setText("FStop: " + str([self.fstop_loaded_surface, self.fstop_loaded_scatter]))
+        self.ss_label.setText("SS: " + str([self.ss_loaded_surface, self.ss_loaded_scatter]))
 
-    def validateImage(self):
+    def validateSurfaceImage(self):
 
         # Check the iso values
-        iso = self.main_window.iso_drop.currentText() == str(int(self.iso_loaded))
+        iso = self.main_window.iso_drop_surface.currentText() == str(int(self.iso_loaded_surface))
         # Check the shutter speed
-        ss = self.main_window.ss_drop.currentText() == str(self.ss_loaded)
+        ss = self.main_window.ss_drop_surface.currentText() == str(self.ss_loaded_surface)
         # Check the fstop
-        fstop = self.main_window.fstop_drop.currentText() == str(self.fstop_loaded)
+        fstop = self.main_window.fstop_drop_surface.currentText() == str(self.fstop_loaded_surface)
 
         # If the image is valid, let them accept
         if fstop and ss and iso:
             self.accept_button.setDisabled(False)
 
         else:
-            msg = 'Image parameters are not correct!\n'
-            msg += 'ISO:  ' + str(int(self.iso_loaded))
-            msg += '  should be  ' + self.main_window.iso_drop.currentText() + '\n'
-            msg += 'FStop:  ' + str(self.fstop_loaded)
-            msg += '  should be  ' + self.main_window.fstop_drop.currentText() + '\n'
-            msg += 'SS:  ' + str(self.ss_loaded)
-            msg += '  should be  ' + self.main_window.ss_drop.currentText() + '\n'
+            msg = 'Image parameters for the surface image are not correct!\n'
+            msg += 'ISO:  ' + str(int(self.iso_loaded_surface))
+            msg += '  should be  ' + self.main_window.iso_drop_surface.currentText() + '\n'
+            msg += 'FStop:  ' + str(self.fstop_loaded_surface)
+            msg += '  should be  ' + self.main_window.fstop_drop_surface.currentText() + '\n'
+            msg += 'SS:  ' + str(self.ss_loaded_surface)
+            msg += '  should be  ' + self.main_window.ss_drop_surface.currentText() + '\n'
             msg += 'Please retake the image!'
             self.errorMessage(msg)
+
+
+    def validateScatterImage(self):
+
+        # Check the iso values
+        iso = self.main_window.iso_drop_scatter.currentText() == str(int(self.iso_loaded_scatter))
+        # Check the shutter speed
+        ss = self.main_window.ss_drop_scatter.currentText() == str(self.ss_loaded_scatter)
+        # Check the fstop
+        fstop = self.main_window.fstop_drop_scatter.currentText() == str(self.fstop_loaded_scatter)
+
+        # If the image is valid, let them accept
+        if fstop and ss and iso:
+            self.accept_button.setDisabled(False)
+
+        else:
+            msg = 'Image parameters for the scatter image are not correct!\n'
+            msg += 'ISO:  ' + str(int(self.iso_loaded_scatter))
+            msg += '  should be  ' + self.main_window.iso_drop_scatter.currentText() + '\n'
+            msg += 'FStop:  ' + str(self.fstop_loaded_scatter)
+            msg += '  should be  ' + self.main_window.fstop_drop_scatter.currentText() + '\n'
+            msg += 'SS:  ' + str(self.ss_loaded_scatter)
+            msg += '  should be  ' + self.main_window.ss_drop_scatter.currentText() + '\n'
+            msg += 'Please retake the image!'
+            self.errorMessage(msg)
+
 
     def _rowConstructor(self, note=None):
 
@@ -168,12 +204,13 @@ class ImageWindow(QWidget):
             notes = self.notes_edit.text()
 
         self.main_window.table_list.append([
-        self.image_path.split('/')[-1].split('.')[0],
+        [self.main_window.surface_path.split('/')[-1].split('.')[0],
+         self.main_window.scatter_path.split('/')[-1].split('.')[0]],
         str(self.main_window.total_distance),
         self.section_list,
-        str(self.ss_loaded),
-        str(self.iso_loaded),
-        str(self.fstop_loaded),
+        [str(self.ss_loaded_surface), str(self.ss_loaded_scatter)],
+        [str(self.iso_loaded_surface), str(self.iso_loaded_scatter)],
+        [str(self.fstop_loaded_surface), str(self.fstop_loaded_scatter)],
         notes
         ])
 
@@ -183,7 +220,7 @@ class ImageWindow(QWidget):
 
         # Populate the new row
         for i, col in enumerate(self.main_window.table_list[-1]):
-            item = QTableWidgetItem(col)
+            item = QTableWidgetItem(str(col))
             self.main_window.main_table.setItem(rowPosition, i, item)
 
     def acceptClicked(self):
@@ -246,6 +283,7 @@ class ImageWindow(QWidget):
         self.main_window.setDisabled(False)
         self.main_window.hit_button.setDisabled(True)
         self.main_window.main_table.setDisabled(True)
+        self.main_window.capture_button.setEnabled(True)
 
         self._rowConstructor(note='Bad Settings')
 
