@@ -1,12 +1,10 @@
-import csv
-import glob
-import rawpy
 import numpy as np
 
 from PySide2.QtWidgets import *
 from PySide2 import QtGui
 from PySide2 import QtCore
 from rawkit.raw import Raw
+
 
 class ImageWindow(QWidget):
 
@@ -36,15 +34,15 @@ class ImageWindow(QWidget):
         self.scatter_label = QLabel("Loading...")
         self.notes_edit = QLineEdit("No notes")
 
-        self.retake_button.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.accept_button.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.section_a.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.section_b.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.section_c.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.iso_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.fstop_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.ss_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.notes_edit.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
+        self.retake_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.accept_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.section_a.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.section_b.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.section_c.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.iso_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.fstop_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.ss_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.notes_edit.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         # self.load_image_button.clicked.connect(self.selectNewImage)
 
         # Check to see if the the sections have been taken yet
@@ -90,7 +88,6 @@ class ImageWindow(QWidget):
         # self.surface_label.setText(self.image_path)
 
         return layout
-
 
     def loadImage(self):
 
@@ -153,7 +150,6 @@ class ImageWindow(QWidget):
             msg += 'Please retake the image!'
             self.errorMessage(msg)
 
-
     def validateScatterImage(self):
 
         # Check the iso values
@@ -177,7 +173,6 @@ class ImageWindow(QWidget):
             msg += '  should be  ' + self.main_window.ss_drop_scatter.currentText() + '\n'
             msg += 'Please retake the image!'
             self.errorMessage(msg)
-
 
     def _rowConstructor(self, note=None):
 
@@ -204,14 +199,14 @@ class ImageWindow(QWidget):
             notes = self.notes_edit.text()
 
         self.main_window.table_list.append([
-        [self.main_window.surface_path.split('/')[-1].split('.')[0],
-         self.main_window.scatter_path.split('/')[-1].split('.')[0]],
-        str(self.main_window.total_distance),
-        self.section_list,
-        [str(self.ss_loaded_surface), str(self.ss_loaded_scatter)],
-        [str(self.iso_loaded_surface), str(self.iso_loaded_scatter)],
-        [str(self.fstop_loaded_surface), str(self.fstop_loaded_scatter)],
-        notes
+            [self.main_window.surface_path.split('/')[-1].split('.')[0],
+             self.main_window.scatter_path.split('/')[-1].split('.')[0]],
+            str(self.main_window.total_distance),
+            self.section_list,
+            [str(self.ss_loaded_surface), str(self.ss_loaded_scatter)],
+            [str(self.iso_loaded_surface), str(self.iso_loaded_scatter)],
+            [str(self.fstop_loaded_surface), str(self.fstop_loaded_scatter)],
+            notes
         ])
 
         # Add a new row to the table
@@ -274,7 +269,6 @@ class ImageWindow(QWidget):
         self.close()
         self.destroy()
 
-
     def retakeClicked(self):
         msg = "<font color=red size=40>RE-TAKE THE IMAGE</font>"
         self.main_window.main_label.setText(msg)
@@ -294,14 +288,14 @@ class ImageWindow(QWidget):
         self.destroy()
 
     def errorMessage(self, error):
-       msg = QMessageBox()
-       msg.setIcon(QMessageBox.Critical)
-       msg.setText(error)
-       # msg.setInformativeText("This is additional information")
-       msg.setWindowTitle("ERROR")
-       # msg.setDetailedText("The details are as follows:")
-       msg.setStandardButtons(QMessageBox.Ok)
-       # msg.buttonClicked.connect(msgbtn)
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Critical)
+        msg.setText(error)
+        # msg.setInformativeText("This is additional information")
+        msg.setWindowTitle("ERROR")
+        # msg.setDetailedText("The details are as follows:")
+        msg.setStandardButtons(QMessageBox.Ok)
+        # msg.buttonClicked.connect(msgbtn)
 
-       msg.exec_()
-       # print "value of pressed message box button:", retval
+        msg.exec_()
+        # print "value of pressed message box button:", retval

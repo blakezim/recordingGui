@@ -3,8 +3,6 @@ import sys
 import csv
 import glob
 import time
-import rawpy
-import watch
 import serial
 import qdarkstyle
 import numpy as np
@@ -13,7 +11,6 @@ import subprocess as sp
 from PySide2.QtWidgets import *
 from PySide2 import QtGui
 from PySide2 import QtCore
-from rawkit.raw import Raw
 from image import ImageWindow
 
 
@@ -47,11 +44,18 @@ class MainWindow(QWidget):
         self.image_count = None
 
         # Create the arduino connection
+        # Try all three USB ports
         try:
-            self.arduino = serial.Serial('/dev/tty.usbmodem1411', 9600)
+            self.arduino = serial.Serial('/dev/cu.usbmodem14201', 9600)
         except IOError:
-            print("You don't have the right arduino port.")
-            sys.exit()
+            try:
+                self.arduino = serial.Serial('/dev/cu.usbmodem14301', 9600)
+            except IOError:
+                try:
+                    self.arduino = serial.Serial('/dev/cu.usbmodem14401', 9600)
+                except IOError:
+                    print("You don't have the right arduino port.")
+                    sys.exit()
         # Set main window properties
         self.setGeometry(300, 300, 1200, 800)
         self.setWindowTitle('Recording Window')
