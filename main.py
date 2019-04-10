@@ -138,8 +138,8 @@ class MainWindow(QWidget):
     def backup(self):
         '''Function for backing up the image directory'''
         # Create a list of the image files is the main and backup dirs
-        image_list = glob.glob(self.image_dir + '/*.cr2')
-        backup_list = glob.glob(self.backup_dir + '/*.cr2')
+        image_list = glob.glob(self.image_dir + '/*.nef')
+        backup_list = glob.glob(self.backup_dir + '/*.nef')
 
         # Add the JPEGs
         image_list += glob.glob(self.image_dir + '/*.jpg')
@@ -335,13 +335,13 @@ class MainWindow(QWidget):
         # Get the image names
         self._getImageName()
 
-        surface_iso = self.iso_drop_surface.currentText()
-        surface_ss = float(self.ss_drop_surface.currentText())
-        surface_fstop = self.fstop_drop_surface.currentText()
+        surface_iso = self.iso_drop_surface.currentIndex()
+        surface_ss = self.ss_drop_surface.currentIndex()
+        surface_fstop = self.fstop_drop_surface.currentIndex()
 
-        scatter_iso = self.iso_drop_scatter.currentText()
-        scatter_ss = float(self.ss_drop_scatter.currentText())
-        scatter_fstop = self.fstop_drop_scatter.currentText()
+        scatter_iso = self.iso_drop_scatter.currentIndex()
+        scatter_ss = self.ss_drop_scatter.currentIndex()
+        scatter_fstop = self.fstop_drop_scatter.currentIndex()
 
         # Take the surface images
         ## Command to turn on light a
@@ -349,9 +349,9 @@ class MainWindow(QWidget):
         time.sleep(0.1)
         # print('image 1: ' + surface_iso)
         p = sp.Popen(["gphoto2",
-                      "--set-config", f"iso={surface_iso}",
-                      "--set-config", f"shutterspeed={1/surface_ss}",
-                      "--set-config", f"f-number=f/{surface_fstop}",
+                      "--set-config-index", f"iso={surface_iso}",
+                      "--set-config-index", f"shutterspeed={surface_ss}",
+                      "--set-config-index", f"f-number={surface_fstop}",
                       # f"--filename={self.surface_path + '.%C'}",
                       # "--force-overwrite",
                       f"--filename={self.surface_path + '.%C'}",
@@ -365,9 +365,9 @@ class MainWindow(QWidget):
         time.sleep(0.1)
         # print('image 2: ' + scatter_iso)
         p = sp.Popen(["gphoto2",
-                      "--set-config", f"iso={scatter_iso}",
-                      "--set-config", f"shutterspeed={1/scatter_ss}",
-                      "--set-config", f"f-number=f/{scatter_fstop}",
+                      "--set-config-index", f"iso={scatter_iso}",
+                      "--set-config-index", f"shutterspeed={scatter_ss}",
+                      "--set-config-index", f"f-number={scatter_fstop}",
                       # "--force-overwrite",
                       f"--filename={self.scatter_path + '.%C'}",
                       "--capture-image-and-download"],
@@ -379,19 +379,7 @@ class MainWindow(QWidget):
         self.arduino.write(b'c')
         self.imageWindowLauncher()
 
-    # def _startWatcher(self):
-    #     # Create the other thread
-    #     self.thread = QtCore.QThread(self)
-    #     # Create a watcher object
-    #     self.watcher = watch.QWatcher(self.image_dir)
-    #     # Connect the signal on the watcher with the launch window function
-    #     self.watcher.image_signal.connect(self.imageWindowLauncher)
-    #     # Move the watcher object to the other thread that was created
-    #     self.watcher.moveToThread(self.thread)
-    #     # Connect the thread.start with the run function on the watcher object
-    #     self.thread.started.connect(self.watcher.run)
-    #     # Start the thread
-    #     self.thread.start()
+        self.backup()
 
     def _initTableLayout(self):
         '''Initalize the table layout'''
@@ -424,38 +412,48 @@ class MainWindow(QWidget):
         self.ss_button_scatter.clicked.connect(self.changeScatterSS)
 
         # Set the line edits for the settings
-        self.ss_values = ['2', '4', '8', '15', '30', '60',
-                          '125', '250', '320', '500']
+        self.ss_values = ['0.0001s', '0.0002s', '0.0003s', '0.0004s', '0.0005s', '0.0006s', '0.0008s', '0.0010s',
+                          '0.0012s', '0.0015s', '0.0020s', '0.0025s', '0.0031s', '0.0040s', '0.0050s', '0.0062s',
+                          '0.0080s', '0.0100s', '0.0125s', '0.0166s', '0.0200s', '0.0250s', '0.0333s', '0.0400s',
+                          '0.0500s', '0.0666s', '0.0769s', '0.1000s', '0.1250s', '0.1666s', '0.2000s', '0.2500s',
+                          '0.3333s', '0.4000s', '0.5000s', '0.6250s', '0.7692s', '1.0000s', '1.3000s', '1.6000s',
+                          '2.0000s', '2.5000s', '3.0000s', '4.0000s', '5.0000s', '6.0000s', '8.0000s', '10.0000s',
+                          '13.0000s', '15.0000s', '20.0000s', '25.0000s', '30.0000s']
         self.ss_drop_surface = QComboBox()
         self.ss_drop_surface.addItems(self.ss_values)
-        self.ss_drop_surface.setCurrentIndex(5)
+        self.ss_drop_surface.setCurrentIndex(self.ss_values.index('0.5000s'))
         self.ss_drop_surface.currentIndexChanged.connect(self.changedSurfaceSS)
 
         self.ss_drop_scatter = QComboBox()
         self.ss_drop_scatter.addItems(self.ss_values)
-        self.ss_drop_scatter.setCurrentIndex(8)
+        self.ss_drop_scatter.setCurrentIndex(self.ss_values.index('0.0050s'))
         self.ss_drop_scatter.currentIndexChanged.connect(self.changedScatterSS)
 
-        self.fstop_values = ['1.4', '2.0', '2.8', '4.0', '5.6', '8.0']
+        self.fstop_values = ['f/2.8', 'f/3.2', 'f/3.5', 'f/4', 'f/4.5', 'f/5', 'f/5.6', 'f/6.3', 'f/7.1', 'f/8', 'f/9',
+                             'f/10', 'f/11', 'f/13', 'f/14', 'f/16', 'f/18', 'f/20', 'f/22', 'f/25', 'f/29', 'f/32']
+
         self.fstop_drop_surface = QComboBox()
         self.fstop_drop_surface.addItems(self.fstop_values)
-        self.fstop_drop_surface.setCurrentIndex(5)
+        self.fstop_drop_surface.setCurrentIndex(self.fstop_values.index('f/8'))
         self.fstop_drop_surface.currentIndexChanged.connect(self.changedSurfaceFStop)
 
         self.fstop_drop_scatter = QComboBox()
         self.fstop_drop_scatter.addItems(self.fstop_values)
-        self.fstop_drop_scatter.setCurrentIndex(5)
+        self.fstop_drop_scatter.setCurrentIndex(self.fstop_values.index('f/8'))
         self.fstop_drop_scatter.currentIndexChanged.connect(self.changedScatterFStop)
 
-        self.iso_values = ['100', '200', '400', '800', '1600']
+        self.iso_values = ['50', '64', '80', '100', '125', '160', '200', '250', '320', '400', '500', '640', '800',
+                           '1000', '1250', '1600', '2000', '2500', '3200', '4000', '5000', '6400', '8000', '10000',
+                           '12800', '25600']
+
         self.iso_drop_surface = QComboBox()
         self.iso_drop_surface.addItems(self.iso_values)
-        self.iso_drop_surface.setCurrentIndex(1)
+        self.iso_drop_surface.setCurrentIndex(self.iso_values.index('50'))
         self.iso_drop_surface.currentIndexChanged.connect(self.changedSurfaceISO)
 
         self.iso_drop_scatter = QComboBox()
         self.iso_drop_scatter.addItems(self.iso_values)
-        self.iso_drop_scatter.setCurrentIndex(1)
+        self.iso_drop_scatter.setCurrentIndex(self.iso_values.index('50'))
         self.iso_drop_scatter.currentIndexChanged.connect(self.changedScatterISO)
 
         # Set the font for the buttons

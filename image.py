@@ -63,7 +63,7 @@ class ImageWindow(QWidget):
         self.retake_button.clicked.connect(self.retakeClicked)
 
         # Initially disable the accept button until image has been validated
-        self.accept_button.setDisabled(True)
+        # self.accept_button.setDisabled(True)
 
         self.surface_label.setAlignment(QtCore.Qt.AlignCenter)
         self.scatter_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -112,7 +112,7 @@ class ImageWindow(QWidget):
             self.fstop_loaded_surface = np.around(raw.metadata.aperture, 1)
         # Convert the shutter speed to a number
         self.ss_loaded_surface = int(np.ceil(1 / self.ss_loaded_surface))
-        self.validateSurfaceImage()
+        # self.validateSurfaceImage()
 
         with Raw(filename=self.image_dir + '/' + self.main_window.scatter_path + '.nef') as raw:
             self.iso_loaded_scatter = raw.metadata.iso
@@ -120,7 +120,7 @@ class ImageWindow(QWidget):
             self.fstop_loaded_scatter = np.around(raw.metadata.aperture, 1)
         # Convert the shutter speed to a number
         self.ss_loaded_scatter = int(np.ceil(1 / self.ss_loaded_scatter))
-        self.validateScatterImage()
+        # self.validateScatterImage()
 
         self.iso_label.setText("ISO: " + str([self.iso_loaded_surface, self.iso_loaded_scatter]))
         self.fstop_label.setText("FStop: " + str([self.fstop_loaded_surface, self.fstop_loaded_scatter]))
@@ -279,7 +279,7 @@ class ImageWindow(QWidget):
         self.main_window.main_table.setDisabled(True)
         self.main_window.capture_button.setEnabled(True)
 
-        self._rowConstructor(note='Bad Settings')
+        self._rowConstructor(note='Images Retaken')
 
         # Save the row
         self.main_window.retake = True
@@ -288,6 +288,7 @@ class ImageWindow(QWidget):
         self.destroy()
 
     def errorMessage(self, error):
+
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Critical)
         msg.setText(error)
