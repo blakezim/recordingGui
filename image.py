@@ -32,6 +32,8 @@ class ImageWindow(QWidget):
         self.ss_label = QLabel("SS: ")
         self.surface_label = QLabel("Loading...")
         self.scatter_label = QLabel("Loading...")
+        self.surface_title = QLabel("Surface Image")
+        self.scatter_title = QLabel("Scatter Image")
         self.notes_edit = QLineEdit("No notes")
 
         self.retake_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -79,12 +81,19 @@ class ImageWindow(QWidget):
         gridLayout.addWidget(self.accept_button, 3, 0, 1, 3)
         gridLayout.addWidget(self.notes_edit, 4, 0, 1, 3)
 
+        imageLayout = QGridLayout()
+        imageLayout.addWidget(self.surface_title, 0, 0)
+        imageLayout.addWidget(self.surface_label, 1, 0)
+        imageLayout.addWidget(self.scatter_title, 0, 1)
+        imageLayout.addWidget(self.scatter_label, 1, 1)
+        imageLayout.setRowStretch(0, 5)
+        imageLayout.setRowStretch(0, 30)
+
         layout = QGridLayout()
         layout.addLayout(gridLayout, 0, 0)
-        layout.addWidget(self.surface_label, 0, 1)
-        layout.addWidget(self.scatter_label, 0, 2)
-        # layout.setColumnStretch(0, 10)
-        # layout.setColumnStretch(1, 15)
+        layout.addLayout(imageLayout, 0, 1)
+        # layout.setColumStretch(0, 10)
+        # layout.setRowStretch(1, 15)
         # self.surface_label.setText(self.image_path)
 
         return layout
@@ -111,7 +120,7 @@ class ImageWindow(QWidget):
             self.ss_loaded_surface = raw.metadata.shutter
             self.fstop_loaded_surface = np.around(raw.metadata.aperture, 1)
         # Convert the shutter speed to a number
-        self.ss_loaded_surface = int(np.ceil(1 / self.ss_loaded_surface))
+        # self.ss_loaded_surface = int(np.ceil(1 / self.ss_loaded_surface))
         # self.validateSurfaceImage()
 
         with Raw(filename=self.image_dir + '/' + self.main_window.scatter_path + '.nef') as raw:
@@ -119,7 +128,7 @@ class ImageWindow(QWidget):
             self.ss_loaded_scatter = raw.metadata.shutter
             self.fstop_loaded_scatter = np.around(raw.metadata.aperture, 1)
         # Convert the shutter speed to a number
-        self.ss_loaded_scatter = int(np.ceil(1 / self.ss_loaded_scatter))
+        # self.ss_loaded_scatter = int(np.ceil(1 / self.ss_loaded_scatter))
         # self.validateScatterImage()
 
         self.iso_label.setText("ISO: " + str([self.iso_loaded_surface, self.iso_loaded_scatter]))
@@ -203,7 +212,7 @@ class ImageWindow(QWidget):
              self.main_window.scatter_path.split('/')[-1].split('.')[0]],
             str(self.main_window.total_distance),
             self.section_list,
-            [str(self.ss_loaded_surface), str(self.ss_loaded_scatter)],
+            [str(self.ss_loaded_surface)[0:7], str(self.ss_loaded_scatter)[0:7]],
             [str(self.iso_loaded_surface), str(self.iso_loaded_scatter)],
             [str(self.fstop_loaded_surface), str(self.fstop_loaded_scatter)],
             notes

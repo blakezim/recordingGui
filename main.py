@@ -235,7 +235,6 @@ class MainWindow(QWidget):
                     item = QTableWidgetItem(col)
                     self.main_table.setItem(i, j, item)
 
-
     def save(self):
         path = self.image_dir + '/csv_files/'
         # Append the image name to the csv - will make it different
@@ -262,21 +261,10 @@ class MainWindow(QWidget):
         self.image_window.loadImage()
         self.backup()
 
-    # def calibrationImage(self):
-    #     msg = "<font color=red>Face the block and take a calibration image.</font>"
-    #     self.main_label.setText(msg)
-    #
-    #     msg = "TAKE AN IMAGE!!!"
-    #     self.hit_button.setText(msg)
-    #     self.hit_button.setStyleSheet("color: red")
-    #     self.setEnabled(False)
-
     def _getImageName(self):
 
         if self.image_count == None:
-            # CANNON
             image_list = sorted(glob.glob(self.image_dir + '/*.nef'))
-            print('image_list')
             if not image_list:
                 self.image_count = 1
             else:
