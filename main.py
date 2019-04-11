@@ -36,6 +36,7 @@ class MainWindow(QWidget):
         self.section_a = False
         self.section_b = False
         self.section_c = False
+        self.section_c = False
 
         # Indicator for if the image has to be taken again
         self.retake = False
@@ -138,12 +139,12 @@ class MainWindow(QWidget):
     def backup(self):
         '''Function for backing up the image directory'''
         # Create a list of the image files is the main and backup dirs
-        image_list = glob.glob(self.image_dir + '/*.nef')
-        backup_list = glob.glob(self.backup_dir + '/*.nef')
+        image_list = glob.glob(self.image_dir + '/*.NEF')
+        backup_list = glob.glob(self.backup_dir + '/*.NEF')
 
         # Add the JPEGs
-        image_list += glob.glob(self.image_dir + '/*.jpg')
-        backup_list += glob.glob(self.backup_dir + '/*.jpg')
+        image_list += glob.glob(self.image_dir + '/*.JPG')
+        backup_list += glob.glob(self.backup_dir + '/*.JPG')
 
         # Create a list of CSV files
         csv_main_list = glob.glob(self.image_dir + '/csv_files/*')
@@ -264,7 +265,7 @@ class MainWindow(QWidget):
     def _getImageName(self):
 
         if self.image_count == None:
-            image_list = sorted(glob.glob(self.image_dir + '/*.nef'))
+            image_list = sorted(glob.glob(self.image_dir + '/*.NEF'))
             if not image_list:
                 self.image_count = 1
             else:
@@ -340,9 +341,9 @@ class MainWindow(QWidget):
                       "--set-config-index", f"iso={surface_iso}",
                       "--set-config-index", f"shutterspeed={surface_ss}",
                       "--set-config-index", f"f-number={surface_fstop}",
-                      # f"--filename={self.surface_path + '.%C'}",
-                      # "--force-overwrite",
                       f"--filename={self.surface_path + '.%C'}",
+                      "--set-config", "viewfinder=1",
+                      "--wait-event=1s",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
 
@@ -356,8 +357,9 @@ class MainWindow(QWidget):
                       "--set-config-index", f"iso={scatter_iso}",
                       "--set-config-index", f"shutterspeed={scatter_ss}",
                       "--set-config-index", f"f-number={scatter_fstop}",
-                      # "--force-overwrite",
                       f"--filename={self.scatter_path + '.%C'}",
+                      "--set-config", "viewfinder=1",
+                      "--wait-event=1s",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
         sout, _ = p.communicate()

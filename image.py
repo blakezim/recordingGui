@@ -101,13 +101,13 @@ class ImageWindow(QWidget):
     def loadImage(self):
 
         loader = QtGui.QImage()
-        loader.load(self.image_dir + '/' + self.main_window.surface_path + '.jpg')
+        loader.load(self.image_dir + '/' + self.main_window.surface_path + '.JPG')
 
         map = QtGui.QPixmap(loader)
         scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
         self.surface_label.setPixmap(scaled_map)
 
-        loader.load(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')
+        loader.load(self.image_dir + '/' + self.main_window.scatter_path + '.JPG')
 
         map = QtGui.QPixmap(loader)
         scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
@@ -115,7 +115,7 @@ class ImageWindow(QWidget):
 
         # How long does metadata take
         # Metat data is a namedtuple container
-        with Raw(filename=self.image_dir + '/' + self.main_window.surface_path + '.nef') as raw:
+        with Raw(filename=self.image_dir + '/' + self.main_window.surface_path + '.NEF') as raw:
             self.iso_loaded_surface = raw.metadata.iso
             self.ss_loaded_surface = raw.metadata.shutter
             self.fstop_loaded_surface = np.around(raw.metadata.aperture, 1)
@@ -123,7 +123,7 @@ class ImageWindow(QWidget):
         # self.ss_loaded_surface = int(np.ceil(1 / self.ss_loaded_surface))
         # self.validateSurfaceImage()
 
-        with Raw(filename=self.image_dir + '/' + self.main_window.scatter_path + '.nef') as raw:
+        with Raw(filename=self.image_dir + '/' + self.main_window.scatter_path + '.NEF') as raw:
             self.iso_loaded_scatter = raw.metadata.iso
             self.ss_loaded_scatter = raw.metadata.shutter
             self.fstop_loaded_scatter = np.around(raw.metadata.aperture, 1)
