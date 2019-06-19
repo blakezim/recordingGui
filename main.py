@@ -130,8 +130,9 @@ class MainWindow(QWidget):
         self.fstop_button_scatter.setDisabled(False)
         self.ss_button_scatter.setDisabled(False)
         self.capture_button.setDisabled(False)
-            # temp = "<font color=green>Everything Nominal</font>"
-            # self.main_label.setText(temp)
+        self.main_button.setDisabled(False)
+        temp = "<font color=green>Everything Nominal</font>"
+        self.main_label.setText(temp)
             # Populate the table
             # self.populateTable()
             # self.calibrationImage()
@@ -184,16 +185,16 @@ class MainWindow(QWidget):
             self.main_table.setEnabled(False)
             self.hit_button.setEnabled(False)
 
-        # Need to deal with what happens when 250 is hit
-        if self.total_distance % 250 == 0:
-            msg = "<font color=red size=20>You should be taking sections</font>"
-            self.main_label.setText(msg)
-            # Need to make sure that the section buttons can be clicked again
-            self.section_a = False
-            self.section_b = False
-            self.section_c = False
-
-            self.taking_sections = True
+        # # Need to deal with what happens when 250 is hit
+        # if self.total_distance % 250 == 0:
+        #     msg = "<font color=red size=20>You should be taking sections</font>"
+        #     self.main_label.setText(msg)
+        #     # Need to make sure that the section buttons can be clicked again
+        #     self.section_a = False
+        #     self.section_b = False
+        #     self.section_c = False
+        #
+        #     self.taking_sections = True
 
     def populateTable(self):
 
@@ -371,6 +372,12 @@ class MainWindow(QWidget):
 
         self.backup()
 
+    def main_button_clicked(self):
+        self.section_a = False
+        self.section_b = False
+        self.section_c = False
+        self.section_count += 1
+
     def _initTableLayout(self):
         '''Initalize the table layout'''
         # Initalize the table assuming no CSV file
@@ -528,18 +535,21 @@ class MainWindow(QWidget):
         self.backup_dir_label = QLabel()
         self.image_dist_label = QLabel()
         self.main_label = QLabel()
+        self.main_button = QPushButton("Reset Sections")
 
         # Change the font of all the lables and buttons
         self.image_dir_label.setFont(self.small_text)
         self.backup_dir_label.setFont(self.small_text)
         self.image_dist_label.setFont(self.small_text)
         self.main_label.setFont(self.small_text)
+        self.main_button.setFont(self.small_text)
         self.image_dir_button.setFont(self.small_text)
         self.backup_dir_button.setFont(self.small_text)
         self.capture_button.setFont(self.large_text)
 
         # Set the size policy for the label so it expands vertically
         self.main_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
+        self.main_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         self.capture_button.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
 
         # Initalize the messages for the main label and the directories
@@ -561,10 +571,12 @@ class MainWindow(QWidget):
         self.image_dir_button.clicked.connect(self.image_dir_buttonClick)
         self.backup_dir_button.clicked.connect(self.backup_dir_buttonClick)
         self.capture_button.clicked.connect(self.capture_buttonClick)
+        self.main_button.clicked.connect(self.main_button_clicked)
 
         # Diable the backup directory button at first
         self.backup_dir_button.setEnabled(False)
         self.capture_button.setEnabled(False)
+        self.main_button.setDisabled(True)
 
         # Define the layout for the main window
         layout = QGridLayout()
@@ -576,7 +588,8 @@ class MainWindow(QWidget):
         layout.addWidget(self.backup_dir_button, 1, 0)
         layout.addWidget(self.backup_dir_label, 1, 1)
         layout.addWidget(self.capture_button, 0, 2, 2, 1)
-        layout.addWidget(self.main_label, 2, 0, 1, 3)
+        layout.addWidget(self.main_label, 2, 1, 1, 2)
+        layout.addWidget(self.main_button, 2, 0, 1, 1)
 
         return layout
 
