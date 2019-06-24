@@ -46,17 +46,17 @@ class MainWindow(QWidget):
 
         # Create the arduino connection
         # Try all three USB ports
-        try:
-            self.arduino = serial.Serial('/dev/cu.usbmodem14201', 9600)
-        except IOError:
-            try:
-                self.arduino = serial.Serial('/dev/cu.usbmodem14301', 9600)
-            except IOError:
-                try:
-                    self.arduino = serial.Serial('/dev/cu.usbmodem14401', 9600)
-                except IOError:
-                    print("You don't have the right arduino port.")
-                    sys.exit()
+        # try:
+        #     self.arduino = serial.Serial('/dev/cu.usbmodem14201', 9600)
+        # except IOError:
+        #     try:
+        #         self.arduino = serial.Serial('/dev/cu.usbmodem14301', 9600)
+        #     except IOError:
+        #         try:
+        #             self.arduino = serial.Serial('/dev/cu.usbmodem14401', 9600)
+        #         except IOError:
+        #             print("You don't have the right arduino port.")
+        #             sys.exit()
         # Set main window properties
         self.setGeometry(300, 300, 1200, 800)
         self.setWindowTitle('Recording Window')
@@ -140,12 +140,12 @@ class MainWindow(QWidget):
     def backup(self):
         '''Function for backing up the image directory'''
         # Create a list of the image files is the main and backup dirs
-        image_list = glob.glob(self.image_dir + '/*.NEF')
-        backup_list = glob.glob(self.backup_dir + '/*.NEF')
+        image_list = glob.glob(self.image_dir + '/*.nef')
+        backup_list = glob.glob(self.backup_dir + '/*.nef')
 
         # Add the JPEGs
-        image_list += glob.glob(self.image_dir + '/*.JPG')
-        backup_list += glob.glob(self.backup_dir + '/*.JPG')
+        image_list += glob.glob(self.image_dir + '/*.jpg')
+        backup_list += glob.glob(self.backup_dir + '/*.jpg')
 
         # Create a list of CSV files
         csv_main_list = glob.glob(self.image_dir + '/csv_files/*')
@@ -266,7 +266,7 @@ class MainWindow(QWidget):
     def _getImageName(self):
 
         if self.image_count == None:
-            image_list = sorted(glob.glob(self.image_dir + '/*.NEF'))
+            image_list = sorted(glob.glob(self.image_dir + '/*.nef'))
             if not image_list:
                 self.image_count = 1
             else:
@@ -335,7 +335,7 @@ class MainWindow(QWidget):
 
         # Take the surface images
         ## Command to turn on light a
-        self.arduino.write(b'a')
+        # self.arduino.write(b'a') #CHANGED
         time.sleep(0.1)
         # print('image 1: ' + surface_iso)
         p = sp.Popen(["gphoto2",
@@ -344,14 +344,14 @@ class MainWindow(QWidget):
                       "--set-config-index", f"f-number={surface_fstop}",
                       f"--filename={self.surface_path + '.%C'}",
                       "--set-config", "viewfinder=1",
-                      "--wait-event=1s",
+                      "--wait-event=0.5s",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
 
         sout, _ = p.communicate()
         p.wait()
 
-        self.arduino.write(b'b')
+        # self.arduino.write(b'b')
         time.sleep(0.1)
         # print('image 2: ' + scatter_iso)
         p = sp.Popen(["gphoto2",
@@ -360,14 +360,14 @@ class MainWindow(QWidget):
                       "--set-config-index", f"f-number={scatter_fstop}",
                       f"--filename={self.scatter_path + '.%C'}",
                       "--set-config", "viewfinder=1",
-                      "--wait-event=1s",
+                      "--wait-event=0.5s",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
         sout, _ = p.communicate()
         p.wait()
 
         # Turn off both lights
-        self.arduino.write(b'c')
+        # self.arduino.write(b'c')
         self.imageWindowLauncher()
 
         self.backup()
@@ -418,15 +418,15 @@ class MainWindow(QWidget):
                           '13.0000s', '15.0000s', '20.0000s', '25.0000s', '30.0000s']
         self.ss_drop_surface = QComboBox()
         self.ss_drop_surface.addItems(self.ss_values)
-        self.ss_drop_surface.setCurrentIndex(self.ss_values.index('0.5000s'))
+        self.ss_drop_surface.setCurrentIndex(self.ss_values.index('0.0250s'))
         self.ss_drop_surface.currentIndexChanged.connect(self.changedSurfaceSS)
 
         self.ss_drop_scatter = QComboBox()
         self.ss_drop_scatter.addItems(self.ss_values)
-        self.ss_drop_scatter.setCurrentIndex(self.ss_values.index('0.0050s'))
+        self.ss_drop_scatter.setCurrentIndex(self.ss_values.index('0.0031s'))
         self.ss_drop_scatter.currentIndexChanged.connect(self.changedScatterSS)
 
-        self.fstop_values = ['f/2.8', 'f/3.2', 'f/3.5', 'f/4', 'f/4.5', 'f/5', 'f/5.6', 'f/6.3', 'f/7.1', 'f/8', 'f/9',
+        self.fstop_values = ['f/3.2', 'f/3.5', 'f/4', 'f/4.5', 'f/5', 'f/5.6', 'f/6.3', 'f/7.1', 'f/8', 'f/9',
                              'f/10', 'f/11', 'f/13', 'f/14', 'f/16', 'f/18', 'f/20', 'f/22', 'f/25', 'f/29', 'f/32']
 
         self.fstop_drop_surface = QComboBox()
@@ -439,18 +439,17 @@ class MainWindow(QWidget):
         self.fstop_drop_scatter.setCurrentIndex(self.fstop_values.index('f/8'))
         self.fstop_drop_scatter.currentIndexChanged.connect(self.changedScatterFStop)
 
-        self.iso_values = ['50', '64', '80', '100', '125', '160', '200', '250', '320', '400', '500', '640', '800',
-                           '1000', '1250', '1600', '2000', '2500', '3200', '4000', '5000', '6400', '8000', '10000',
-                           '12800', '25600']
+        self.iso_values = ['100', '125', '160', '200', '250', '320', '400', '500', '640', '800', '1000', '1250', 
+        				   '1600', '2000', '2500', '3200', '4000', '5000', '6400', '8000', '10000', '12800', '25600']
 
         self.iso_drop_surface = QComboBox()
         self.iso_drop_surface.addItems(self.iso_values)
-        self.iso_drop_surface.setCurrentIndex(self.iso_values.index('50'))
+        self.iso_drop_surface.setCurrentIndex(self.iso_values.index('100'))
         self.iso_drop_surface.currentIndexChanged.connect(self.changedSurfaceISO)
 
         self.iso_drop_scatter = QComboBox()
         self.iso_drop_scatter.addItems(self.iso_values)
-        self.iso_drop_scatter.setCurrentIndex(self.iso_values.index('50'))
+        self.iso_drop_scatter.setCurrentIndex(self.iso_values.index('100'))
         self.iso_drop_scatter.currentIndexChanged.connect(self.changedScatterISO)
 
         # Set the font for the buttons
