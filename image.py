@@ -186,16 +186,32 @@ class ImageWindow(QWidget):
     def _rowConstructor(self, note=None):
 
         self.section_list = ''
-        section_count_string = str(self.main_window.section_count)
         if self.section_a.isChecked() and self.section_a.isEnabled():
-            self.section_list += section_count_string + 'a;'
+            if self.main_window.section_count == 0:
+                self.main_window.section_count = 1
+                self.main_window.section_start = self.main_window.total_distance - 50
+            self.section_list += str(self.main_window.section_count) + 'a;'
             self.main_window.section_a = True
         if self.section_b.isChecked() and self.section_b.isEnabled():
-            self.section_list += section_count_string + 'b;'
+            if self.main_window.section_count == 0:
+                self.main_window.section_count = 1
+                self.main_window.section_start = self.main_window.total_distance - 50
+            self.section_list += str(self.main_window.section_count) + 'b;'
             self.main_window.section_b = True
         if self.section_c.isChecked() and self.section_c.isEnabled():
-            self.section_list += section_count_string + 'c;'
+            if self.main_window.section_count == 0:
+                self.main_window.section_count = 1
+                self.main_window.section_start = self.main_window.total_distance - 50
+            self.section_list += str(self.main_window.section_count) + 'c;'
             self.main_window.section_c = True
+
+        if self.main_window.section_a and self.main_window.section_b and self.main_window.section_c:
+            self.main_window.section_a = False
+            self.main_window.section_b = False
+            self.main_window.section_c = False
+            msg = "<font color=green>Everything Nominal</font>"
+            self.main_window.main_label.setText(msg)
+            self.main_window.section_count += 1
 
         if self.section_list == '':
             self.section_list = 'None'
@@ -273,6 +289,18 @@ class ImageWindow(QWidget):
         #     msg = "<font color=green>Everything Nominal</font>"
         #     self.main_window.main_label.setText(msg)
 
+        if self.main_window.retake:
+            msg = "<font color=green>Everything Nominal</font>"
+            self.main_window.main_label.setText(msg)
+            self.main_window.retake = False
+        
+        if (self.main_window.total_distance - self.main_window.section_start) % 250 == 0:
+            if (self.main_window.total_distance - self.main_window.section_start) == 0:
+                pass
+            else:
+                msg = "<font color=red size=40>You should be taking sections</font>"
+                self.main_window.main_label.setText(msg)
+
         self.main_window.retake = False
         self.main_window.save()
         self.close()
@@ -281,6 +309,8 @@ class ImageWindow(QWidget):
     def retakeClicked(self):
         msg = "<font color=red size=40>RE-TAKE THE IMAGE</font>"
         self.main_window.main_label.setText(msg)
+
+        print(self.main_window.main_label.text())
 
         # Do I need to allow the user to change the image parameteres here?
         self.main_window.setDisabled(False)

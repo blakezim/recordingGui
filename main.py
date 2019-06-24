@@ -29,8 +29,8 @@ class MainWindow(QWidget):
         self.large_text.setPointSize(30)
 
         # Group section counter
-        self.section_count = 1
-        self.taking_sections = True
+        self.section_count = 0
+        self.section_start = 0
 
         # Set trackers for what sections have been taken
         self.section_a = False
@@ -179,7 +179,7 @@ class MainWindow(QWidget):
         self.total_dist_label.setText('Total Distance: ' + str(self.total_distance) + ' um')
 
         if self.image_distance == 50:
-            msg = "TAKE AN IMAGE!!!"
+            msg = "Take An Image!"
             self.hit_button.setText(msg)
             self.hit_button.setStyleSheet("color: red")
             self.main_table.setEnabled(False)
@@ -230,6 +230,24 @@ class MainWindow(QWidget):
             # Update the total_distance
             self.total_distance = int(self.table_list[-1][1])
             self.total_dist_label.setText('Total Distance: ' + str(self.total_distance) + ' um')
+
+            # Try and get the most recent secntion counter
+            section_list = []
+            total_distance = []
+            for i in range(0, len(self.table_list)):
+                if self.table_list[i][2] == 'None':
+                    pass
+                else:
+                    section_list += [self.table_list[i][2]]
+                    total_distance += [self.table_list[i][1]]
+
+            if section_list == []:
+                self.section_count = 0
+                self.section_start = 0
+            else:
+                last_section_number = int(section_list[-1].split(';')[0][0])
+                self.section_count = last_section_number + 1
+                self.section_start = int(total_distance[0]) - 50
 
             # Iterate through the items in the list and set the appropriate table items
             for i, row in enumerate(self.table_list):
@@ -320,10 +338,15 @@ class MainWindow(QWidget):
     def changedScatterFStop(self):
         self.fstop_drop_scatter.setDisabled(True)
 
+    def _updateCapture(self):
+        self.capture_button.setText("Capturing ...")
+        self.capture_button.setFont(self.large_text)
+
     def capture_buttonClick(self):
 
         # Get the image names
         self._getImageName()
+        self._updateCapture()
 
         surface_iso = self.iso_drop_surface.currentIndex()
         surface_ss = self.ss_drop_surface.currentIndex()
@@ -344,7 +367,7 @@ class MainWindow(QWidget):
                       "--set-config-index", f"f-number={surface_fstop}",
                       f"--filename={self.surface_path + '.%C'}",
                       "--set-config", "viewfinder=1",
-                      "--wait-event=0.5s",
+                      # "--wait-event=0.5s",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
 
@@ -360,7 +383,7 @@ class MainWindow(QWidget):
                       "--set-config-index", f"f-number={scatter_fstop}",
                       f"--filename={self.scatter_path + '.%C'}",
                       "--set-config", "viewfinder=1",
-                      "--wait-event=0.5s",
+                      # "--wait-event=0.5s",
                       "--capture-image-and-download"],
                       stdout=sp.PIPE, cwd=f"{self.image_dir}/")
         sout, _ = p.communicate()
@@ -368,6 +391,8 @@ class MainWindow(QWidget):
 
         # Turn off both lights
         # self.arduino.write(b'c')
+        self.capture_button.setText("Capture Image")
+        self.capture_button.setFont(self.large_text)
         self.imageWindowLauncher()
 
         self.backup()
@@ -426,7 +451,7 @@ class MainWindow(QWidget):
         self.ss_drop_scatter.setCurrentIndex(self.ss_values.index('0.0031s'))
         self.ss_drop_scatter.currentIndexChanged.connect(self.changedScatterSS)
 
-        self.fstop_values = ['f/3.2', 'f/3.5', 'f/4', 'f/4.5', 'f/5', 'f/5.6', 'f/6.3', 'f/7.1', 'f/8', 'f/9',
+        self.fstop_values = ['f/3', 'f/3.2', 'f/3.5', 'f/4', 'f/4.5', 'f/5', 'f/5.6', 'f/6.3', 'f/7.1', 'f/8', 'f/9',
                              'f/10', 'f/11', 'f/13', 'f/14', 'f/16', 'f/18', 'f/20', 'f/22', 'f/25', 'f/29', 'f/32']
 
         self.fstop_drop_surface = QComboBox()
