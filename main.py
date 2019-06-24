@@ -46,17 +46,17 @@ class MainWindow(QWidget):
 
         # Create the arduino connection
         # Try all three USB ports
-        # try:
-        #     self.arduino = serial.Serial('/dev/cu.usbmodem14201', 9600)
-        # except IOError:
-        #     try:
-        #         self.arduino = serial.Serial('/dev/cu.usbmodem14301', 9600)
-        #     except IOError:
-        #         try:
-        #             self.arduino = serial.Serial('/dev/cu.usbmodem14401', 9600)
-        #         except IOError:
-        #             print("You don't have the right arduino port.")
-        #             sys.exit()
+        try:
+            self.arduino = serial.Serial('/dev/cu.usbmodem14201', 9600)
+        except IOError:
+            try:
+                self.arduino = serial.Serial('/dev/cu.usbmodem14301', 9600)
+            except IOError:
+                try:
+                    self.arduino = serial.Serial('/dev/cu.usbmodem14401', 9600)
+                except IOError:
+                    print("You don't have the right arduino port.")
+                    sys.exit()
         # Set main window properties
         self.setGeometry(300, 300, 1200, 800)
         self.setWindowTitle('Recording Window')
@@ -358,7 +358,7 @@ class MainWindow(QWidget):
 
         # Take the surface images
         ## Command to turn on light a
-        # self.arduino.write(b'a') #CHANGED
+        self.arduino.write(b'a') 
         time.sleep(0.1)
         # print('image 1: ' + surface_iso)
         p = sp.Popen(["gphoto2",
@@ -374,7 +374,7 @@ class MainWindow(QWidget):
         sout, _ = p.communicate()
         p.wait()
 
-        # self.arduino.write(b'b')
+        self.arduino.write(b'b')
         time.sleep(0.1)
         # print('image 2: ' + scatter_iso)
         p = sp.Popen(["gphoto2",
@@ -390,7 +390,7 @@ class MainWindow(QWidget):
         p.wait()
 
         # Turn off both lights
-        # self.arduino.write(b'c')
+        self.arduino.write(b'c')
         self.capture_button.setText("Capture Image")
         self.capture_button.setFont(self.large_text)
         self.imageWindowLauncher()
