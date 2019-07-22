@@ -192,17 +192,20 @@ class ImageWindow(QWidget):
                 self.main_window.section_start = self.main_window.total_distance - 50
             self.section_list += str(self.main_window.section_count) + 'a;'
             self.main_window.section_a = True
+            self.main_window.started_sects = True
         if self.section_b.isChecked() and self.section_b.isEnabled():
             if self.main_window.section_count == 0:
                 self.main_window.section_count = 1
                 self.main_window.section_start = self.main_window.total_distance - 50
             self.section_list += str(self.main_window.section_count) + 'b;'
+            self.main_window.started_sects = True
             self.main_window.section_b = True
         if self.section_c.isChecked() and self.section_c.isEnabled():
             if self.main_window.section_count == 0:
                 self.main_window.section_count = 1
                 self.main_window.section_start = self.main_window.total_distance - 50
             self.section_list += str(self.main_window.section_count) + 'c;'
+            self.main_window.started_sects = True
             self.main_window.section_c = True
 
         if self.main_window.section_a and self.main_window.section_b and self.main_window.section_c:
@@ -294,10 +297,15 @@ class ImageWindow(QWidget):
             self.main_window.main_label.setText(msg)
             self.main_window.retake = False
         
-        if (self.main_window.total_distance - self.main_window.section_start) % 250 == 0:
-            if (self.main_window.total_distance - self.main_window.section_start) == 0:
-                pass
-            else:
+        # if (self.main_window.total_distance - self.main_window.section_start) % 250 == 0:
+        #     if (self.main_window.total_distance - self.main_window.section_start) == 0:
+        #         pass
+        #     else:
+        #         msg = "<font color=red size=40>You should be taking sections</font>"
+        #         self.main_window.main_label.setText(msg)
+
+        if self.main_window.started_sects:
+            if (self.main_window.total_distance - self.main_window.section_start) % 250 == 0:
                 msg = "<font color=red size=40>You should be taking sections</font>"
                 self.main_window.main_label.setText(msg)
 

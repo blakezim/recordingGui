@@ -31,6 +31,7 @@ class MainWindow(QWidget):
         # Group section counter
         self.section_count = 0
         self.section_start = 0
+        self.started_sects = False
 
         # Set trackers for what sections have been taken
         self.section_a = False
